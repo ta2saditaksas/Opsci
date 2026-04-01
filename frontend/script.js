@@ -1,13 +1,9 @@
-const API_BASE = "http://127.0.0.1:8000";
-const MOVIES_URL = `${API_BASE}/movies`;
+const API_URL = "http://127.0.0.1:8000/movies";
 const container = document.getElementById("movies");
-const searchInput = document.getElementById("searchInput");
-const searchButton = document.getElementById("searchButton");
-const resetButton = document.getElementById("resetButton");
 
-async function fetchMovies(url) {
+async function loadMovies() {
   try {
-    const response = await fetch(url);
+    const response = await fetch(API_URL);
 
     if (!response.ok) {
       throw new Error(`Erreur HTTP : ${response.status}`);
@@ -23,11 +19,6 @@ async function fetchMovies(url) {
 
 function renderMovies(movies) {
   container.innerHTML = "";
-
-  if (movies.length === 0) {
-    container.innerHTML = `<p>Aucun film trouvé.</p>`;
-    return;
-  }
 
   movies.forEach((movie) => {
     const card = document.createElement("article");
@@ -46,17 +37,4 @@ function renderMovies(movies) {
   });
 }
 
-searchButton.addEventListener("click", () => {
-  const query = searchInput.value.trim();
-
-  if (query) {
-    fetchMovies(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
-  }
-});
-
-resetButton.addEventListener("click", () => {
-  searchInput.value = "";
-  fetchMovies(MOVIES_URL);
-});
-
-fetchMovies(MOVIES_URL);
+loadMovies();
