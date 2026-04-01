@@ -3,14 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catalogue de films</title>
+  <title>T&A Screen</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="header">
-    <h1>Catalogue de films</h1>
-    <p>Films populaires récupérés depuis TMDB via le backend FastAPI</p>
-  </header>
+    <h1>T&A Screen</h1>
+    <p>Votre catalogue de films intelligent</p>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Rechercher un film..." />
+      <button id="searchButton">Rechercher</button>
+      <button id="resetButton">Réinitialiser</button>
+    </div>
+    </header>
 
   <main class="container">
     <div id="movies" class="grid"></div>
