@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
+from pydantic import BaseModel
 import os
 import requests
 
@@ -24,6 +25,10 @@ TMDB_TOKEN = os.getenv("TMDB_TOKEN")
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 
+class FavoriteMovie(BaseModel):
+    movie_id: int
+    title: str
+    poster_url: str | None = None
 
 @app.get("/")
 def root():
@@ -121,3 +126,44 @@ def test_db():
             return {"message": "Connexion PostgreSQL OK"}
     except Exception as e:
         return {"error": str(e)}
+    
+@app.get("/favorites")
+def get_favorites():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("SELECT id, movie_id, title, poster_url FROM favorites ORDER BY id DESC")
+            )
+            favorites = []
+            for row in result:
+                favorites.append({
+                    "id": row.id,
+                    "movie_id": row.movie_id,
+                    "title": row.title,
+                    "poster_url": row.poster_url
+                })
+            return favorites
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.post("/favorites")
+def add_favorite(movie: FavoriteMovie):
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("""
+                    INSERT INTO favorites (movie_id, title, poster_url)
+                    VALUES (:movie_id, :title, :poster_url)
+                """),
+                {
+                    "movie_id": movie.movie_id,
+                    "title": movie.title,
+                    "poster_url": movie.poster_url
+                }
+            )
+            connection.commit()
+
+        return {"message": "Film ajouté aux favoris"}
+    except Exception as e:
+        return {"error": str(e)}
+
