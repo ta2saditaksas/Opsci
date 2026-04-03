@@ -150,6 +150,14 @@ def get_favorites():
 def add_favorite(movie: FavoriteMovie):
     try:
         with engine.connect() as connection:
+            existing = connection.execute(
+                text("SELECT id FROM favorites WHERE movie_id = :movie_id"),
+                {"movie_id": movie.movie_id}
+            ).fetchone()
+
+            if existing:
+                return {"message": "Film déjà présent dans les favoris"}
+
             connection.execute(
                 text("""
                     INSERT INTO favorites (movie_id, title, poster_url)

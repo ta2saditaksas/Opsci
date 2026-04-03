@@ -43,8 +43,38 @@ function renderMovies(movies) {
         <h2>${movie.title}</h2>
         <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
         <p class="desc">${movie.overview || "Pas de description disponible."}</p>
+        <button class="favorite-btn"> Ajouter aux favoris</button>
       </div>
     `;
+
+    const favoriteButton = card.querySelector(".favorite-btn");
+
+favoriteButton.addEventListener("click", async () => {
+  try {
+    const response = await fetch(`${API_BASE}/favorites`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        movie_id: movie.id,
+        title: movie.title,
+        poster_url: movie.poster_url || ""
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Erreur lors de l'ajout aux favoris");
+    }
+
+    alert("Film ajouté aux favoris ");
+      } catch (error) {
+        console.error(error);
+    alert("Impossible d'ajouter le film aux favoris.");
+      }
+    });
 
     container.appendChild(card);
   });
