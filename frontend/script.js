@@ -9,6 +9,8 @@ const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
 const resetButton = document.getElementById("resetButton");
 
+const favoritesContainer = document.getElementById("favorites");
+
 async function loadMovies(url = MOVIES_URL) {
   try {
     const response = await fetch(url);
@@ -70,6 +72,7 @@ favoriteButton.addEventListener("click", async () => {
     }
 
     alert("Film ajouté aux favoris ");
+    loadFavorites();
       } catch (error) {
         console.error(error);
     alert("Impossible d'ajouter le film aux favoris.");
@@ -99,3 +102,35 @@ searchInput.addEventListener("keydown", (event) => {
 });
 
 loadMovies();
+
+async function loadFavorites() {
+  try {
+    const response = await fetch(`${API_BASE}/favorites`);
+    const favorites = await response.json();
+
+    favoritesContainer.innerHTML = "";
+
+    if (favorites.length === 0) {
+      favoritesContainer.innerHTML = "<p style='text-align:center;'>Aucun favori</p>";
+      return;
+    }
+
+    favorites.forEach((movie) => {
+      const card = document.createElement("article");
+      card.className = "card";
+
+      card.innerHTML = `
+        <img src="${movie.poster_url || ""}" alt="${movie.title}">
+        <div class="card-content">
+          <h2>${movie.title}</h2>
+        </div>
+      `;
+
+      favoritesContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+loadFavorites();

@@ -102,3 +102,21 @@ body {
 .search-bar button:hover {
   background: #1d4ed8;
 }
+
+.favorite-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background 0.2s ease;
+}
+
+.favorite-btn:hover {
+  background: #b91c1c;
+}
