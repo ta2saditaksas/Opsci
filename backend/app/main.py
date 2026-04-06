@@ -175,3 +175,16 @@ def add_favorite(movie: FavoriteMovie):
     except Exception as e:
         return {"error": str(e)}
 
+@app.delete("/favorites/{movie_id}")
+def delete_favorite(movie_id: int):
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("DELETE FROM favorites WHERE movie_id = :movie_id"),
+                {"movie_id": movie_id}
+            )
+            connection.commit()
+
+        return {"message": "Film supprimé des favoris"}
+    except Exception as e:
+        return {"error": str(e)}

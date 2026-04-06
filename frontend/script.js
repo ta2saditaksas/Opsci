@@ -11,6 +11,8 @@ const resetButton = document.getElementById("resetButton");
 
 const favoritesContainer = document.getElementById("favorites");
 
+let favoriteIds = [] ;
+
 async function loadMovies(url = MOVIES_URL) {
   try {
     const response = await fetch(url);
@@ -45,7 +47,9 @@ function renderMovies(movies) {
         <h2>${movie.title}</h2>
         <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
         <p class="desc">${movie.overview || "Pas de description disponible."}</p>
-        <button class="favorite-btn"> Ajouter aux favoris</button>
+        <button class="favorite-btn">
+          ${favoriteIds.includes(movie.id) ? "Déjà en favori" : "Ajouter aux favoris"}
+        </button>
       </div>
     `;
 
@@ -101,12 +105,13 @@ searchInput.addEventListener("keydown", (event) => {
   }
 });
 
-loadMovies();
+
 
 async function loadFavorites() {
   try {
     const response = await fetch(`${API_BASE}/favorites`);
     const favorites = await response.json();
+    favoriteIds = favorites.map(movie => movie.movie_id) ;
 
     favoritesContainer.innerHTML = "";
 
@@ -123,9 +128,31 @@ async function loadFavorites() {
         <img src="${movie.poster_url || ""}" alt="${movie.title}">
         <div class="card-content">
           <h2>${movie.title}</h2>
+          <button class="delete-btn">Supprimer</button>
         </div>
       `;
+      const deleteButton = card.querySelector(".delete-btn");
+      deleteButton.addEventListener("click", async () => {
+        try {
+          const response = await fetch(`${API_BASE}/favorites/${movie.movie_id}`, {
+            method: "DELETE"
+          });
 
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Erreur suppression");
+          }
+
+          alert("Film supprimé");
+          loadFavorites();
+          loadMovies(); // pour mettre à jour les boutons 
+        } catch (error) {
+          console.error(error);
+          alert("Impossible de supprimer.");
+        }
+      });
+        
       favoritesContainer.appendChild(card);
     });
   } catch (error) {
@@ -133,4 +160,9 @@ async function loadFavorites() {
   }
 }
 
-loadFavorites();
+async function init() {
+  await loadFavorites();
+  await loadMovies();
+}
+
+init();
