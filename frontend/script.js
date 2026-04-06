@@ -18,6 +18,7 @@ let favoriteIds = [] ;
 favoritesPageBtn.addEventListener("click", () => {
   container.style.display = "none"; // cacher films
   favoritesContainer.style.display = "grid"; // afficher favoris
+  favoritesTitle.style.display = "block";
   loadFavorites();
   
   homeBtn.style.display = "inline-block"; // afficher bouton accueil
@@ -26,6 +27,7 @@ favoritesPageBtn.addEventListener("click", () => {
 homeBtn.addEventListener("click", () => {
   container.style.display = "grid"; // afficher films
   favoritesContainer.style.display = "none"; // cacher favoris
+  favoritesTitle.style.display = "none";
   loadMovies();
 
   homeBtn.style.display = "none"; // cacher bouton accueil
