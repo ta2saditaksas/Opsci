@@ -8,10 +8,34 @@ const container = document.getElementById("movies");
 const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
 const resetButton = document.getElementById("resetButton");
+const favoritesTitle = document.getElementById("favoritesTitle");
 
 const favoritesContainer = document.getElementById("favorites");
-
+const favoritesPageBtn = document.getElementById("favoritesPageBtn");
+const homeBtn = document.getElementById("homeBtn");
 let favoriteIds = [] ;
+
+favoritesPageBtn.addEventListener("click", () => {
+  container.style.display = "none"; // cacher films
+  favoritesContainer.style.display = "grid"; // afficher favoris
+  loadFavorites();
+  
+  homeBtn.style.display = "inline-block"; // afficher bouton accueil
+});
+
+homeBtn.addEventListener("click", () => {
+  container.style.display = "grid"; // afficher films
+  favoritesContainer.style.display = "none"; // cacher favoris
+  loadMovies();
+
+  homeBtn.style.display = "none"; // cacher bouton accueil
+});
+
+//les cacher au démarrge
+favoritesContainer.style.display = "none";
+homeBtn.style.display = "none";
+favoritesTitle.style.display = "none";
+
 
 async function loadMovies(url = MOVIES_URL) {
   try {
