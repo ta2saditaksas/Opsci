@@ -1,28 +1,14 @@
-image: docker:latest
-
-services:
-  - docker:dind
+image: alpine:latest
 
 stages:
   - test
-  - build
 
-variables:
-  DOCKER_DRIVER: overlay2
-
-# Test simple
-test:
+test_files:
   stage: test
   script:
-    - echo "Test backend..."
-    - test -f backend/app/main.py || (echo "main.py manquant" && exit 1)
-    - test -f frontend/index.html || (echo "index.html manquant" && exit 1)
+    - echo "Vérification des fichiers..."
+    - test -f backend/app/main.py || (echo "backend/app/main.py manquant" && exit 1)
+    - test -f frontend/index.html || (echo "frontend/index.html manquant" && exit 1)
+    - test -f frontend/script.js || (echo "frontend/script.js manquant" && exit 1)
+    - test -f frontend/style.css || (echo "frontend/style.css manquant" && exit 1)
     - echo "Tests OK"
-
-#  Build Docker
-build:
-  stage: build
-  script:
-    - docker build -t opsci-backend ./backend
-    - docker build -t opsci-frontend ./frontend
-    - echo "Build OK"
