@@ -11,5 +11,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backend:
+    build: ./backend
+    container_name: opsci-backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/movies_db
+      TMDB_TOKEN: ${TMDB_TOKEN}
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: opsci-frontend
+    depends_on:
+      - backend
+    environment :
+      BACKEND_URL: http://localhost:8000
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres_data:

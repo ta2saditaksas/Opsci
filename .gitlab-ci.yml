@@ -1,14 +1,60 @@
-image: alpine:latest
-
 stages:
   - test
+  - build
+  - deploy
 
+# Stage 1 : vérification des fichiers
 test_files:
   stage: test
+  image: alpine:latest
   script:
     - echo "Vérification des fichiers..."
     - test -f backend/app/main.py || (echo "backend/app/main.py manquant" && exit 1)
+    - test -f backend/Dockerfile || (echo "backend/Dockerfile manquant" && exit 1)
     - test -f frontend/index.html || (echo "frontend/index.html manquant" && exit 1)
     - test -f frontend/script.js || (echo "frontend/script.js manquant" && exit 1)
     - test -f frontend/style.css || (echo "frontend/style.css manquant" && exit 1)
-    - echo "Tests OK"
+    - test -f docker-compose.yml || (echo "docker-compose.yml manquant" && exit 1)
+    - echo "Tous les fichiers sont présents "
+
+# Stage 2 : build des images Docker
+build_backend:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - echo "Build image backend..."
+    - docker build -t opsci-backend ./backend
+    - echo "Build backend OK "
+  only:
+    - pipeline
+    - main
+
+build_frontend:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - echo "Build image frontend..."
+    - docker build -t opsci-frontend ./frontend
+    - echo "Build frontend OK "
+  only:
+    - pipeline
+    - main
+
+# Stage 3 : deploy (simulation)
+deploy:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Déploiement simulé - prêt pour Kubernetes"
+    - echo "Image backend OK"
+    - echo "Image frontend OK"
+  only:
+    - main

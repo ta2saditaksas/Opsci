@@ -6,8 +6,10 @@ from pydantic import BaseModel
 import os
 import requests
 
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/movies_db"
-
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@localhost:5432/movies_db"
+)
 engine = create_engine(DATABASE_URL)
 
 load_dotenv()
