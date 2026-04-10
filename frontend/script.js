@@ -1,7 +1,6 @@
-const API_URL = "http://127.0.0.1:8000/movies";
+//const API_URL = "http://127.0.0.1:8000/movies";
+//const API_BASE = "http://127.0.0.1:8000"; on les met dans config.js
 
-
-const API_BASE = "http://127.0.0.1:8000";
 const MOVIES_URL = `${API_BASE}/movies`;
 const container = document.getElementById("movies");
 
