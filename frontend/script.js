@@ -109,6 +109,8 @@ favoriteButton.addEventListener("click", async () => {
     });
 
     container.appendChild(card);
+    loadRecommendations(movie.id, card);
+
   });
 }
 
@@ -191,3 +193,31 @@ async function init() {
 }
 
 init();
+
+async function loadRecommendations(movieId, container) {
+  try {
+    const response = await fetch(`${API_BASE}/recommendations/${movieId}`);
+    const recommendations = await response.json();
+
+    if (recommendations.length === 0) return;
+
+    const recoDiv = document.createElement("div");
+    recoDiv.className = "recommendations";
+    recoDiv.innerHTML = `<p><strong>Films similaires :</strong></p>`;
+
+    recommendations.forEach((movie) => {
+      const span = document.createElement("span");
+      span.textContent = movie.title;
+      span.className = "reco-tag";
+      span.addEventListener("click", () => {
+        loadMovies(`${API_BASE}/search?q=${encodeURIComponent(movie.title)}`);
+        window.scrollTo(0, 0);
+      });
+      recoDiv.appendChild(span);
+    });
+
+    container.appendChild(recoDiv);
+  } catch (error) {
+    console.error("Erreur recommandations:", error);
+  }
+}

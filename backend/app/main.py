@@ -190,3 +190,41 @@ def delete_favorite(movie_id: int):
         return {"message": "Film supprimé des favoris"}
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/recommendations/{movie_id}")
+def get_recommendations(movie_id: int):
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant dans .env")
+
+    url = f"{TMDB_BASE_URL}/movie/{movie_id}/similar"
+    headers = {
+        "Authorization": f"Bearer {TMDB_TOKEN}",
+        "accept": "application/json"
+    }
+    params = {
+        "language": "fr-FR",
+        "page": 1
+    }
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=response.status_code,
+            detail=f"Erreur TMDB : {response.text}"
+        )
+
+    data = response.json()
+    results = data.get("results", [])[:5]  # top 5 similaires
+
+    movies = []
+    for movie in results:
+        movies.append({
+            "id": movie.get("id"),
+            "title": movie.get("title"),
+            "overview": movie.get("overview"),
+            "release_date": movie.get("release_date"),
+            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
+        })
+
+    return movies
