@@ -151,3 +151,24 @@ body {
 .header button:hover {
   background: #1d4ed8;
 }
+
+.recommendations {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.reco-tag {
+  display: inline-block;
+  background: #2a2a4a;
+  color: #aaa;
+  padding: 3px 8px;
+  margin: 2px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.reco-tag:hover {
+  background: #3a3a6a;
+  color: white;
+}
