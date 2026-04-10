@@ -21,6 +21,8 @@ favoritesTitle.style.display = "none";
 recoContainer.style.display = "none";
 recoTitle.style.display = "none";
 homeBtn.style.display = "none";
+favoritesPageBtn.style.display = "inline-block";
+recoPageBtn.style.display = "inline-block";
 
 function showOnly(section) {
   container.style.display = "none";
@@ -29,8 +31,6 @@ function showOnly(section) {
   recoContainer.style.display = "none";
   recoTitle.style.display = "none";
   homeBtn.style.display = "inline-block";
-  favoritesPageBtn.style.display = "inline-block";
-  recoPageBtn.style.display = "inline-block";
 
   if (section === "home") {
     container.style.display = "grid";
@@ -38,11 +38,9 @@ function showOnly(section) {
   } else if (section === "favorites") {
     favoritesContainer.style.display = "grid";
     favoritesTitle.style.display = "block";
-    favoritesPageBtn.style.display = "none";
   } else if (section === "reco") {
     recoContainer.style.display = "grid";
     recoTitle.style.display = "block";
-    recoPageBtn.style.display = "none";
   }
 }
 
