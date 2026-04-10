@@ -3,49 +3,64 @@
 
 const MOVIES_URL = `${API_BASE}/movies`;
 const container = document.getElementById("movies");
-
 const searchInput = document.getElementById("searchInput");
 const searchButton = document.getElementById("searchButton");
 const resetButton = document.getElementById("resetButton");
 const favoritesTitle = document.getElementById("favoritesTitle");
-
 const favoritesContainer = document.getElementById("favorites");
 const favoritesPageBtn = document.getElementById("favoritesPageBtn");
+const recoPageBtn = document.getElementById("recoPageBtn");
+const recoTitle = document.getElementById("recoTitle");
+const recoContainer = document.getElementById("recommendations");
 const homeBtn = document.getElementById("homeBtn");
-let favoriteIds = [] ;
+let favoriteIds = [];
+
+// Cacher au démarrage
+favoritesContainer.style.display = "none";
+favoritesTitle.style.display = "none";
+recoContainer.style.display = "none";
+recoTitle.style.display = "none";
+homeBtn.style.display = "none";
+
+function showOnly(section) {
+  container.style.display = "none";
+  favoritesContainer.style.display = "none";
+  favoritesTitle.style.display = "none";
+  recoContainer.style.display = "none";
+  recoTitle.style.display = "none";
+  homeBtn.style.display = "inline-block";
+
+  if (section === "home") {
+    container.style.display = "grid";
+    homeBtn.style.display = "none";
+  } else if (section === "favorites") {
+    favoritesContainer.style.display = "grid";
+    favoritesTitle.style.display = "block";
+  } else if (section === "reco") {
+    recoContainer.style.display = "grid";
+    recoTitle.style.display = "block";
+  }
+}
 
 favoritesPageBtn.addEventListener("click", () => {
-  container.style.display = "none"; // cacher films
-  favoritesContainer.style.display = "grid"; // afficher favoris
-  favoritesTitle.style.display = "block";
+  showOnly("favorites");
   loadFavorites();
-  
-  homeBtn.style.display = "inline-block"; // afficher bouton accueil
+});
+
+recoPageBtn.addEventListener("click", () => {
+  showOnly("reco");
+  loadRecommendationsFromFavorites();
 });
 
 homeBtn.addEventListener("click", () => {
-  container.style.display = "grid"; // afficher films
-  favoritesContainer.style.display = "none"; // cacher favoris
-  favoritesTitle.style.display = "none";
+  showOnly("home");
   loadMovies();
-
-  homeBtn.style.display = "none"; // cacher bouton accueil
 });
-
-//les cacher au démarrge
-favoritesContainer.style.display = "none";
-homeBtn.style.display = "none";
-favoritesTitle.style.display = "none";
-
 
 async function loadMovies(url = MOVIES_URL) {
   try {
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Erreur HTTP : ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`Erreur HTTP : ${response.status}`);
     const movies = await response.json();
     renderMovies(movies);
   } catch (error) {
@@ -56,7 +71,6 @@ async function loadMovies(url = MOVIES_URL) {
 
 function renderMovies(movies) {
   container.innerHTML = "";
-
   if (movies.length === 0) {
     container.innerHTML = `<p>Aucun film trouvé.</p>`;
     return;
@@ -65,7 +79,6 @@ function renderMovies(movies) {
   movies.forEach((movie) => {
     const card = document.createElement("article");
     card.className = "card";
-
     card.innerHTML = `
       <img src="${movie.poster_url || ""}" alt="${movie.title}">
       <div class="card-content">
@@ -79,46 +92,34 @@ function renderMovies(movies) {
     `;
 
     const favoriteButton = card.querySelector(".favorite-btn");
-
-favoriteButton.addEventListener("click", async () => {
-  try {
-    const response = await fetch(`${API_BASE}/favorites`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        movie_id: movie.id,
-        title: movie.title,
-        poster_url: movie.poster_url || ""
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Erreur lors de l'ajout aux favoris");
-    }
-
-    alert("Film ajouté aux favoris ");
-    loadFavorites();
+    favoriteButton.addEventListener("click", async () => {
+      try {
+        const response = await fetch(`${API_BASE}/favorites`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            movie_id: movie.id,
+            title: movie.title,
+            poster_url: movie.poster_url || ""
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Erreur ajout favoris");
+        alert("Film ajouté aux favoris !");
+        loadFavorites();
       } catch (error) {
         console.error(error);
-    alert("Impossible d'ajouter le film aux favoris.");
+        alert("Impossible d'ajouter le film aux favoris.");
       }
     });
 
     container.appendChild(card);
-    loadRecommendations(movie.id, card);
-
   });
 }
 
 searchButton.addEventListener("click", () => {
   const query = searchInput.value.trim();
-  if (query) {
-    loadMovies(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
-  }
+  if (query) loadMovies(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
 });
 
 resetButton.addEventListener("click", () => {
@@ -127,19 +128,14 @@ resetButton.addEventListener("click", () => {
 });
 
 searchInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    searchButton.click();
-  }
+  if (event.key === "Enter") searchButton.click();
 });
-
-
 
 async function loadFavorites() {
   try {
     const response = await fetch(`${API_BASE}/favorites`);
     const favorites = await response.json();
-    favoriteIds = favorites.map(movie => movie.movie_id) ;
-
+    favoriteIds = favorites.map(movie => movie.movie_id);
     favoritesContainer.innerHTML = "";
 
     if (favorites.length === 0) {
@@ -150,7 +146,6 @@ async function loadFavorites() {
     favorites.forEach((movie) => {
       const card = document.createElement("article");
       card.className = "card";
-
       card.innerHTML = `
         <img src="${movie.poster_url || ""}" alt="${movie.title}">
         <div class="card-content">
@@ -164,26 +159,67 @@ async function loadFavorites() {
           const response = await fetch(`${API_BASE}/favorites/${movie.movie_id}`, {
             method: "DELETE"
           });
-
           const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Erreur suppression");
-          }
-
+          if (!response.ok) throw new Error(data.error || "Erreur suppression");
           alert("Film supprimé");
           loadFavorites();
-          loadMovies(); // pour mettre à jour les boutons 
+          loadMovies();
         } catch (error) {
           console.error(error);
           alert("Impossible de supprimer.");
         }
       });
-        
       favoritesContainer.appendChild(card);
     });
   } catch (error) {
     console.error(error);
+  }
+}
+
+async function loadRecommendationsFromFavorites() {
+  recoContainer.innerHTML = "<p>Chargement des recommandations...</p>";
+
+  try {
+    const response = await fetch(`${API_BASE}/favorites`);
+    const favorites = await response.json();
+
+    if (favorites.length === 0) {
+      recoContainer.innerHTML = "<p style='text-align:center;'>Ajoutez des films en favoris pour obtenir des recommandations !</p>";
+      return;
+    }
+
+    recoContainer.innerHTML = "";
+    const seen = new Set();
+
+    for (const fav of favorites) {
+      const recoResponse = await fetch(`${API_BASE}/recommendations/${fav.movie_id}`);
+      const recos = await recoResponse.json();
+
+      recos.forEach((movie) => {
+        if (seen.has(movie.id)) return;
+        seen.add(movie.id);
+
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML = `
+          <img src="${movie.poster_url || ""}" alt="${movie.title}">
+          <div class="card-content">
+            <h2>${movie.title}</h2>
+            <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
+            <p class="desc">${movie.overview || "Pas de description disponible."}</p>
+          </div>
+        `;
+        recoContainer.appendChild(card);
+      });
+    }
+
+    if (recoContainer.children.length === 0) {
+      recoContainer.innerHTML = "<p style='text-align:center;'>Aucune recommandation trouvée.</p>";
+    }
+
+  } catch (error) {
+    console.error(error);
+    recoContainer.innerHTML = "<p>Erreur lors du chargement des recommandations.</p>";
   }
 }
 
@@ -193,31 +229,3 @@ async function init() {
 }
 
 init();
-
-async function loadRecommendations(movieId, container) {
-  try {
-    const response = await fetch(`${API_BASE}/recommendations/${movieId}`);
-    const recommendations = await response.json();
-
-    if (recommendations.length === 0) return;
-
-    const recoDiv = document.createElement("div");
-    recoDiv.className = "recommendations";
-    recoDiv.innerHTML = `<p><strong>Films similaires :</strong></p>`;
-
-    recommendations.forEach((movie) => {
-      const span = document.createElement("span");
-      span.textContent = movie.title;
-      span.className = "reco-tag";
-      span.addEventListener("click", () => {
-        loadMovies(`${API_BASE}/search?q=${encodeURIComponent(movie.title)}`);
-        window.scrollTo(0, 0);
-      });
-      recoDiv.appendChild(span);
-    });
-
-    container.appendChild(recoDiv);
-  } catch (error) {
-    console.error("Erreur recommandations:", error);
-  }
-}
