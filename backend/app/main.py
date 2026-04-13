@@ -227,6 +227,44 @@ def get_recommendations(movie_id: int):
     data = response.json()
     results = data.get("results", [])[:5]  # top 5 similaires
 
+MOOD_GENRES = {
+    "bonne_humeur": [35, 16],      # Comédie, Animation
+    "melancolique": [18, 10749],   # Drame, Romance
+    "sensations": [27, 53],        # Horreur, Thriller
+    "aventure": [28, 878],         # Action, Science-Fiction
+    "reflechi": [99, 36]           # Documentaire, Histoire
+}
+
+@app.get("/movies/mood/{mood}")
+def get_movies_by_mood(mood: str):
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
+
+    if mood not in MOOD_GENRES:
+        raise HTTPException(status_code=404, detail="Humeur non reconnue")
+
+    genres = ",".join(str(g) for g in MOOD_GENRES[mood])
+
+    url = f"{TMDB_BASE_URL}/discover/movie"
+    headers = {
+        "Authorization": f"Bearer {TMDB_TOKEN}",
+        "accept": "application/json"
+    }
+    params = {
+        "language": "fr-FR",
+        "with_genres": genres,
+        "sort_by": "popularity.desc",
+        "page": 1
+    }
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
+
+    data = response.json()
+    results = data.get("results", [])
+
     movies = []
     for movie in results:
         movies.append({

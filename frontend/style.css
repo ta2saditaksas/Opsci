@@ -172,3 +172,66 @@ body {
   background: #3a3a6a;
   color: white;
 }
+
+.layout {
+  display: flex;
+}
+
+.sidebar {
+  width: 180px;
+  min-height: 100vh;
+  background: #1a1a2e;
+  padding: 20px 15px;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.sidebar h3 {
+  color: #aaa;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+}
+
+.mood-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mood-tag {
+  color: #ccc;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 5px;
+  transition: all 0.2s;
+}
+
+.mood-tag:hover {
+  background: #2a2a4a;
+  color: white;
+}
+
+.mood-tag.active {
+  background: #3a3a6a;
+  color: white;
+}
+
+.mood-btn {
+  background: #2a2a4a;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.mood-btn:hover {
+  background: #3a3a6a;
+}
