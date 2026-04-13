@@ -284,3 +284,9 @@ body {
   font-size: 20px;
   cursor: pointer;
 }
+
+.rating {
+  color: #f5c518;
+  font-size: 14px;
+  margin: 4px 0;
+}

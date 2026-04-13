@@ -46,6 +46,16 @@ class FavoriteMovie(BaseModel):
     title: str
     poster_url: str | None = None
 
+def format_movie(movie):
+    return {
+        "id": movie.get("id"),
+        "title": movie.get("title"),
+        "overview": movie.get("overview"),
+        "release_date": movie.get("release_date"),
+        "vote_average": movie.get("vote_average"),
+        "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
+    }
+
 @app.get("/")
 def root():
     return {"message": "Backend OK"}
@@ -61,7 +71,6 @@ def get_movies():
     if not TMDB_TOKEN:
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant dans .env")
 
-    # Vérifier le cache Redis
     try:
         cached = redis_client.get("movies_popular")
         if cached:
@@ -70,37 +79,15 @@ def get_movies():
         pass
 
     url = f"{TMDB_BASE_URL}/movie/popular"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
-    params = {
-        "language": "fr-FR",
-        "page": 1
-    }
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+    params = {"language": "fr-FR", "page": 1}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
-
     if response.status_code != 200:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=f"Erreur TMDB : {response.text}"
-        )
+        raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
 
-    data = response.json()
-    results = data.get("results", [])
+    movies = [format_movie(m) for m in response.json().get("results", [])]
 
-    movies = []
-    for movie in results:
-        movies.append({
-            "id": movie.get("id"),
-            "title": movie.get("title"),
-            "overview": movie.get("overview"),
-            "release_date": movie.get("release_date"),
-            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
-        })
-
-    # Stocker dans Redis pendant 10 minutes
     try:
         redis_client.setex("movies_popular", 600, json.dumps(movies))
     except:
@@ -114,45 +101,21 @@ def search_movies(q: str):
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant dans .env")
 
     url = f"{TMDB_BASE_URL}/search/movie"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
-    params = {
-        "language": "fr-FR",
-        "query": q,
-        "page": 1
-    }
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+    params = {"language": "fr-FR", "query": q, "page": 1}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
-
     if response.status_code != 200:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=f"Erreur TMDB : {response.text}"
-        )
+        raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
 
-    data = response.json()
-    results = data.get("results", [])
-
-    movies = []
-    for movie in results:
-        movies.append({
-            "id": movie.get("id"),
-            "title": movie.get("title"),
-            "overview": movie.get("overview"),
-            "release_date": movie.get("release_date"),
-            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
-        })
-
-    return movies
+    return [format_movie(m) for m in response.json().get("results", [])]
 
 
 @app.get("/test-db")
 def test_db():
     try:
         with engine.connect() as connection:
-            result = connection.execute(text("SELECT 1"))
+            connection.execute(text("SELECT 1"))
             return {"message": "Connexion PostgreSQL OK"}
     except Exception as e:
         return {"error": str(e)}
@@ -164,15 +127,7 @@ def get_favorites():
             result = connection.execute(
                 text("SELECT id, movie_id, title, poster_url FROM favorites ORDER BY id DESC")
             )
-            favorites = []
-            for row in result:
-                favorites.append({
-                    "id": row.id,
-                    "movie_id": row.movie_id,
-                    "title": row.title,
-                    "poster_url": row.poster_url
-                })
-            return favorites
+            return [{"id": row.id, "movie_id": row.movie_id, "title": row.title, "poster_url": row.poster_url} for row in result]
     except Exception as e:
         return {"error": str(e)}
     
@@ -189,18 +144,10 @@ def add_favorite(movie: FavoriteMovie):
                 return {"message": "Film déjà présent dans les favoris"}
 
             connection.execute(
-                text("""
-                    INSERT INTO favorites (movie_id, title, poster_url)
-                    VALUES (:movie_id, :title, :poster_url)
-                """),
-                {
-                    "movie_id": movie.movie_id,
-                    "title": movie.title,
-                    "poster_url": movie.poster_url
-                }
+                text("INSERT INTO favorites (movie_id, title, poster_url) VALUES (:movie_id, :title, :poster_url)"),
+                {"movie_id": movie.movie_id, "title": movie.title, "poster_url": movie.poster_url}
             )
             connection.commit()
-
         return {"message": "Film ajouté aux favoris"}
     except Exception as e:
         return {"error": str(e)}
@@ -214,7 +161,6 @@ def delete_favorite(movie_id: int):
                 {"movie_id": movie_id}
             )
             connection.commit()
-
         return {"message": "Film supprimé des favoris"}
     except Exception as e:
         return {"error": str(e)}
@@ -225,37 +171,16 @@ def get_recommendations(movie_id: int):
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant dans .env")
 
     url = f"{TMDB_BASE_URL}/movie/{movie_id}/similar"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
-    params = {
-        "language": "fr-FR",
-        "page": 1
-    }
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+    params = {"language": "fr-FR", "page": 1}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
-
     if response.status_code != 200:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=f"Erreur TMDB : {response.text}"
-        )
+        raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
 
-    data = response.json()
-    results = data.get("results", [])[:5]
+    return [format_movie(m) for m in response.json().get("results", [])[:5]]
 
-    movies = []
-    for movie in results:
-        movies.append({
-            "id": movie.get("id"),
-            "title": movie.get("title"),
-            "overview": movie.get("overview"),
-            "release_date": movie.get("release_date"),
-            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
-        })
 
-    return movies
 MOOD_GENRES = {
     "bonne_humeur": [35, 16],      # Comédie, Animation
     "melancolique": [18, 10749],   # Drame, Romance
@@ -268,43 +193,19 @@ MOOD_GENRES = {
 def get_movies_by_mood(mood: str):
     if not TMDB_TOKEN:
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
-
     if mood not in MOOD_GENRES:
         raise HTTPException(status_code=404, detail="Humeur non reconnue")
 
     genres = ",".join(str(g) for g in MOOD_GENRES[mood])
-
     url = f"{TMDB_BASE_URL}/discover/movie"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
-    params = {
-        "language": "fr-FR",
-        "with_genres": genres,
-        "sort_by": "popularity.desc",
-        "page": 1
-    }
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+    params = {"language": "fr-FR", "with_genres": genres, "sort_by": "popularity.desc", "page": 1}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
-
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
 
-    data = response.json()
-    results = data.get("results", [])
-
-    movies = []
-    for movie in results:
-        movies.append({
-            "id": movie.get("id"),
-            "title": movie.get("title"),
-            "overview": movie.get("overview"),
-            "release_date": movie.get("release_date"),
-            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
-        })
-
-    return movies
+    return [format_movie(m) for m in response.json().get("results", [])]
 
 @app.get("/genres")
 def get_genres():
@@ -312,15 +213,11 @@ def get_genres():
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
 
     url = f"{TMDB_BASE_URL}/genre/movie/list"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
     params = {"language": "fr-FR"}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
-    data = response.json()
-    return data.get("genres", [])
+    return response.json().get("genres", [])
 
 
 @app.get("/movies/genre/{genre_id}")
@@ -329,32 +226,12 @@ def get_movies_by_genre(genre_id: int):
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
 
     url = f"{TMDB_BASE_URL}/discover/movie"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
-    params = {
-        "language": "fr-FR",
-        "with_genres": genre_id,
-        "sort_by": "popularity.desc",
-        "page": 1
-    }
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+    params = {"language": "fr-FR", "with_genres": genre_id, "sort_by": "popularity.desc", "page": 1}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
-    data = response.json()
-    results = data.get("results", [])
+    return [format_movie(m) for m in response.json().get("results", [])]
 
-    movies = []
-    for movie in results:
-        movies.append({
-            "id": movie.get("id"),
-            "title": movie.get("title"),
-            "overview": movie.get("overview"),
-            "release_date": movie.get("release_date"),
-            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
-        })
-
-    return movies
 
 @app.get("/movies/{movie_id}/trailer")
 def get_trailer(movie_id: int):
@@ -362,29 +239,12 @@ def get_trailer(movie_id: int):
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
 
     url = f"{TMDB_BASE_URL}/movie/{movie_id}/videos"
-    headers = {
-        "Authorization": f"Bearer {TMDB_TOKEN}",
-        "accept": "application/json"
-    }
-    params = {"language": "fr-FR"}
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
 
-    response = requests.get(url, headers=headers, params=params, timeout=10)
-    data = response.json()
-    results = data.get("results", [])
-
-    # Chercher un trailer YouTube
-    for video in results:
-        if video.get("type") == "Trailer" and video.get("site") == "YouTube":
-            return {"trailer_url": f"https://www.youtube.com/embed/{video['key']}"}
-
-    # Si pas de trailer en français, chercher en anglais
-    params["language"] = "en-US"
-    response = requests.get(url, headers=headers, params=params, timeout=10)
-    data = response.json()
-    results = data.get("results", [])
-
-    for video in results:
-        if video.get("type") == "Trailer" and video.get("site") == "YouTube":
-            return {"trailer_url": f"https://www.youtube.com/embed/{video['key']}"}
+    for lang in ["fr-FR", "en-US"]:
+        response = requests.get(url, headers=headers, params={"language": lang}, timeout=10)
+        for video in response.json().get("results", []):
+            if video.get("type") == "Trailer" and video.get("site") == "YouTube":
+                return {"trailer_url": f"https://www.youtube.com/embed/{video['key']}"}
 
     return {"trailer_url": None}
