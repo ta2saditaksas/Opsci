@@ -239,6 +239,40 @@ async function loadRecommendationsFromFavorites() {
 async function init() {
   await loadFavorites();
   await loadMovies();
+  await loadGenres();
 }
 
+
+async function loadGenres() {
+  try {
+    const response = await fetch(`${API_BASE}/genres`);
+    const genres = await response.json();
+
+    const sidebar = document.querySelector(".sidebar");
+
+    const genreSection = document.createElement("div");
+    genreSection.innerHTML = `<h3>Genres</h3>`;
+
+    const genreList = document.createElement("ul");
+    genreList.className = "mood-list";
+
+    genres.forEach(genre => {
+      const li = document.createElement("li");
+      li.className = "mood-tag";
+      li.textContent = genre.name;
+      li.addEventListener("click", () => {
+        document.querySelectorAll(".mood-tag").forEach(t => t.classList.remove("active"));
+        li.classList.add("active");
+        showOnly("home");
+        loadMovies(`${API_BASE}/movies/genre/${genre.id}`);
+      });
+      genreList.appendChild(li);
+    });
+
+    genreSection.appendChild(genreList);
+    sidebar.appendChild(genreSection);
+  } catch (error) {
+    console.error("Erreur genres:", error);
+  }
+}
 init();
