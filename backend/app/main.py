@@ -11,6 +11,16 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres:postgres@localhost:5432/movies_db"
 )
 engine = create_engine(DATABASE_URL)
+with engine.connect() as connection:
+    connection.execute(text("""
+        CREATE TABLE IF NOT EXISTS favorites (
+            id SERIAL PRIMARY KEY,
+            movie_id INTEGER UNIQUE NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            poster_url TEXT
+        )
+    """))
+    connection.commit()
 
 load_dotenv()
 
