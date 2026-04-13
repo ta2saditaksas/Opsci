@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 import os
 import requests
+import redis
+import json
+
+redis_client = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -57,6 +61,14 @@ def get_movies():
     if not TMDB_TOKEN:
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant dans .env")
 
+    # Vérifier le cache Redis
+    try:
+        cached = redis_client.get("movies_popular")
+        if cached:
+            return json.loads(cached)
+    except:
+        pass
+
     url = f"{TMDB_BASE_URL}/movie/popular"
     headers = {
         "Authorization": f"Bearer {TMDB_TOKEN}",
@@ -87,6 +99,12 @@ def get_movies():
             "release_date": movie.get("release_date"),
             "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
         })
+
+    # Stocker dans Redis pendant 10 minutes
+    try:
+        redis_client.setex("movies_popular", 600, json.dumps(movies))
+    except:
+        pass
 
     return movies
 
@@ -225,8 +243,19 @@ def get_recommendations(movie_id: int):
         )
 
     data = response.json()
-    results = data.get("results", [])[:5]  # top 5 similaires
+    results = data.get("results", [])[:5]
 
+    movies = []
+    for movie in results:
+        movies.append({
+            "id": movie.get("id"),
+            "title": movie.get("title"),
+            "overview": movie.get("overview"),
+            "release_date": movie.get("release_date"),
+            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
+        })
+
+    return movies
 MOOD_GENRES = {
     "bonne_humeur": [35, 16],      # Comédie, Animation
     "melancolique": [18, 10749],   # Drame, Romance
@@ -262,6 +291,56 @@ def get_movies_by_mood(mood: str):
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
 
+    data = response.json()
+    results = data.get("results", [])
+
+    movies = []
+    for movie in results:
+        movies.append({
+            "id": movie.get("id"),
+            "title": movie.get("title"),
+            "overview": movie.get("overview"),
+            "release_date": movie.get("release_date"),
+            "poster_url": f"{TMDB_IMAGE_BASE_URL}{movie['poster_path']}" if movie.get("poster_path") else None
+        })
+
+    return movies
+
+@app.get("/genres")
+def get_genres():
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
+
+    url = f"{TMDB_BASE_URL}/genre/movie/list"
+    headers = {
+        "Authorization": f"Bearer {TMDB_TOKEN}",
+        "accept": "application/json"
+    }
+    params = {"language": "fr-FR"}
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+    data = response.json()
+    return data.get("genres", [])
+
+
+@app.get("/movies/genre/{genre_id}")
+def get_movies_by_genre(genre_id: int):
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
+
+    url = f"{TMDB_BASE_URL}/discover/movie"
+    headers = {
+        "Authorization": f"Bearer {TMDB_TOKEN}",
+        "accept": "application/json"
+    }
+    params = {
+        "language": "fr-FR",
+        "with_genres": genre_id,
+        "sort_by": "popularity.desc",
+        "page": 1
+    }
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
     data = response.json()
     results = data.get("results", [])
 
