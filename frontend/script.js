@@ -42,6 +42,8 @@ function showOnly(section) {
   recoContainer.style.display = "none";
   recoTitle.style.display = "none";
   homeBtn.style.display = "inline-block";
+  favoritesPageBtn.style.display = "inline-block";
+  recoPageBtn.style.display = "inline-block";
 
   if (section === "home") {
     container.style.display = "grid";
@@ -49,9 +51,11 @@ function showOnly(section) {
   } else if (section === "favorites") {
     favoritesContainer.style.display = "grid";
     favoritesTitle.style.display = "block";
+    favoritesPageBtn.style.display = "none";
   } else if (section === "reco") {
     recoContainer.style.display = "grid";
     recoTitle.style.display = "block";
+    recoPageBtn.style.display = "none";
   }
 }
 
@@ -101,6 +105,7 @@ function renderMovies(movies) {
         <button class="favorite-btn">
           ${favoriteIds.includes(movie.id) ? "Déjà en favori" : "Ajouter aux favoris"}
         </button>
+        <button class="trailer-btn">▶ Bande annonce</button>
       </div>
     `;
 
@@ -123,6 +128,42 @@ function renderMovies(movies) {
       } catch (error) {
         console.error(error);
         alert("Impossible d'ajouter le film aux favoris.");
+      }
+    });
+
+    const trailerButton = card.querySelector(".trailer-btn");
+    trailerButton.addEventListener("click", async () => {
+      try {
+        const response = await fetch(`${API_BASE}/movies/${movie.id}/trailer`);
+        const data = await response.json();
+
+        if (!data.trailer_url) {
+          alert("Aucune bande annonce disponible.");
+          return;
+        }
+
+        const modal = document.createElement("div");
+        modal.className = "modal";
+        modal.innerHTML = `
+          <div class="modal-content">
+            <button class="modal-close">✕</button>
+            <iframe width="100%" height="400" src="${data.trailer_url}"
+              frameborder="0" allowfullscreen></iframe>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector(".modal-close").addEventListener("click", () => {
+          document.body.removeChild(modal);
+        });
+
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) document.body.removeChild(modal);
+        });
+
+      } catch (error) {
+        console.error(error);
+        alert("Erreur lors du chargement de la bande annonce.");
       }
     });
 
@@ -236,13 +277,6 @@ async function loadRecommendationsFromFavorites() {
   }
 }
 
-async function init() {
-  await loadFavorites();
-  await loadMovies();
-  await loadGenres();
-}
-
-
 async function loadGenres() {
   try {
     const response = await fetch(`${API_BASE}/genres`);
@@ -275,4 +309,11 @@ async function loadGenres() {
     console.error("Erreur genres:", error);
   }
 }
+
+async function init() {
+  await loadFavorites();
+  await loadMovies();
+  await loadGenres();
+}
+
 init();
