@@ -355,3 +355,36 @@ def get_movies_by_genre(genre_id: int):
         })
 
     return movies
+
+@app.get("/movies/{movie_id}/trailer")
+def get_trailer(movie_id: int):
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
+
+    url = f"{TMDB_BASE_URL}/movie/{movie_id}/videos"
+    headers = {
+        "Authorization": f"Bearer {TMDB_TOKEN}",
+        "accept": "application/json"
+    }
+    params = {"language": "fr-FR"}
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+    data = response.json()
+    results = data.get("results", [])
+
+    # Chercher un trailer YouTube
+    for video in results:
+        if video.get("type") == "Trailer" and video.get("site") == "YouTube":
+            return {"trailer_url": f"https://www.youtube.com/embed/{video['key']}"}
+
+    # Si pas de trailer en français, chercher en anglais
+    params["language"] = "en-US"
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+    data = response.json()
+    results = data.get("results", [])
+
+    for video in results:
+        if video.get("type") == "Trailer" and video.get("site") == "YouTube":
+            return {"trailer_url": f"https://www.youtube.com/embed/{video['key']}"}
+
+    return {"trailer_url": None}
