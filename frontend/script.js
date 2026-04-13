@@ -24,6 +24,17 @@ homeBtn.style.display = "none";
 favoritesPageBtn.style.display = "inline-block";
 recoPageBtn.style.display = "inline-block";
 
+// Filtre par humeur
+document.querySelectorAll(".mood-tag").forEach(tag => {
+  tag.addEventListener("click", () => {
+    document.querySelectorAll(".mood-tag").forEach(t => t.classList.remove("active"));
+    tag.classList.add("active");
+    const mood = tag.dataset.mood;
+    showOnly("home");
+    loadMovies(`${API_BASE}/movies/mood/${mood}`);
+  });
+});
+
 function showOnly(section) {
   container.style.display = "none";
   favoritesContainer.style.display = "none";

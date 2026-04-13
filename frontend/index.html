@@ -20,15 +20,28 @@
     </div>
   </header>
 
-  <main class="container">
-    <h2 id="favoritesTitle">Mes Favoris</h2>
-    <div id="favorites" class="grid"></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Humeur</h3>
+      <ul class="mood-list">
+        <li class="mood-tag" data-mood="bonne_humeur">Bonne humeur</li>
+        <li class="mood-tag" data-mood="melancolique">Mélancolique</li>
+        <li class="mood-tag" data-mood="sensations">Sensations fortes</li>
+        <li class="mood-tag" data-mood="aventure">Aventure</li>
+        <li class="mood-tag" data-mood="reflechi">Réfléchi</li>
+      </ul>
+    </aside>
 
-    <h2 id="recoTitle">Recommandés pour vous</h2>
-    <div id="recommendations" class="grid"></div>
+    <main class="container">
+      <h2 id="favoritesTitle">Mes Favoris</h2>
+      <div id="favorites" class="grid"></div>
 
-    <div id="movies" class="grid"></div>
-  </main>
+      <h2 id="recoTitle">Recommandés pour vous</h2>
+      <div id="recommendations" class="grid"></div>
+
+      <div id="movies" class="grid"></div>
+    </main>
+  </div>
 
   <script src="config.js"></script>
   <script src="script.js"></script>
