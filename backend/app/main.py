@@ -7,6 +7,7 @@ import os
 import requests
 import redis
 import json
+import time
 
 redis_client = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
 
@@ -14,17 +15,21 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:postgres@localhost:5432/movies_db"
 )
-engine = create_engine(DATABASE_URL)
-with engine.connect() as connection:
-    connection.execute(text("""
-        CREATE TABLE IF NOT EXISTS favorites (
-            id SERIAL PRIMARY KEY,
-            movie_id INTEGER UNIQUE NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            poster_url TEXT
-        )
-    """))
-    connection.commit()
+for i in range(10):
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS favorites (
+                    id SERIAL PRIMARY KEY,
+                    movie_id INTEGER UNIQUE NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    poster_url TEXT
+                )
+            """))
+            connection.commit()
+        break
+    except Exception:
+        time.sleep(3)
 
 load_dotenv()
 
