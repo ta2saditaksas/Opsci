@@ -189,6 +189,24 @@ searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") searchButton.click();
 });
 
+let searchTimeout;
+searchInput.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+  const query = searchInput.value.trim();
+  
+  if (query.length === 0) {
+    loadMovies();
+    return;
+  }
+  
+  if (query.length < 2) return;
+
+  searchTimeout = setTimeout(() => {
+    showOnly("home");
+    loadMovies(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+  }, 400);
+});
+
 async function loadFavorites() {
   try {
     const response = await fetch(`${API_BASE}/favorites`);
