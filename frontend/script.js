@@ -97,18 +97,21 @@ function renderMovies(movies) {
     const card = document.createElement("article");
     card.className = "card";
     card.innerHTML = `
-  <img src="${movie.poster_url || ""}" alt="${movie.title}">
-  <div class="card-content">
-    <h2>${movie.title}</h2>
-    <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
-    <p class="rating"> ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
-    <p class="desc">${movie.overview || "Pas de description disponible."}</p>
-    <button class="favorite-btn">
-      ${favoriteIds.includes(movie.id) ? "Déjà en favori" : "Ajouter aux favoris"}
-    </button>
-    <button class="trailer-btn"> Bande annonce</button>
-  </div>
-`;
+      <img src="${movie.poster_url || ""}" alt="${movie.title}">
+      <div class="overlay">
+        <h3>${movie.title}</h3>
+        <p>${movie.overview || "Pas de description disponible."}</p>
+      </div>
+      <div class="card-content">
+        <h2>${movie.title}</h2>
+        <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
+        <p class="rating">⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
+        <button class="favorite-btn">
+          ${favoriteIds.includes(movie.id) ? "Déjà en favori" : "Ajouter aux favoris"}
+        </button>
+        <button class="trailer-btn">▶ Bande annonce</button>
+      </div>
+    `;
 
     const favoriteButton = card.querySelector(".favorite-btn");
     favoriteButton.addEventListener("click", async () => {
