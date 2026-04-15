@@ -368,8 +368,37 @@ async function loadTrending() {
           <h2>${movie.title}</h2>
           <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
           <p class="rating">⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
+          <button class="favorite-btn">Ajouter aux favoris</button>
+          <button class="trailer-btn">▶ Bande annonce</button>
         </div>
       `;
+
+      card.querySelector(".favorite-btn").addEventListener("click", async () => {
+        await fetch(`${API_BASE}/favorites`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ movie_id: movie.id, title: movie.title, poster_url: movie.poster_url || "" })
+        });
+        alert("Film ajouté aux favoris !");
+      });
+
+      card.querySelector(".trailer-btn").addEventListener("click", async () => {
+        const res = await fetch(`${API_BASE}/movies/${movie.id}/trailer`);
+        const data = await res.json();
+        if (!data.trailer_url) { alert("Aucune bande annonce disponible."); return; }
+        const modal = document.createElement("div");
+        modal.className = "modal";
+        modal.innerHTML = `
+          <div class="modal-content">
+            <button class="modal-close">✕</button>
+            <iframe width="100%" height="400" src="${data.trailer_url}" frameborder="0" allowfullscreen></iframe>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector(".modal-close").addEventListener("click", () => document.body.removeChild(modal));
+        modal.addEventListener("click", (e) => { if (e.target === modal) document.body.removeChild(modal); });
+      });
+
       trendingContainer.appendChild(card);
     });
   } catch (error) {
