@@ -13,6 +13,9 @@ const recoPageBtn = document.getElementById("recoPageBtn");
 const recoTitle = document.getElementById("recoTitle");
 const recoContainer = document.getElementById("recommendations");
 const homeBtn = document.getElementById("homeBtn");
+const trendingBtn = document.getElementById("trendingBtn");
+const trendingTitle = document.getElementById("trendingTitle");
+const trendingContainer = document.getElementById("trending");
 let favoriteIds = [];
 
 // Cacher au démarrage
@@ -23,6 +26,8 @@ recoTitle.style.display = "none";
 homeBtn.style.display = "none";
 favoritesPageBtn.style.display = "inline-block";
 recoPageBtn.style.display = "inline-block";
+trendingContainer.style.display = "none";
+trendingTitle.style.display = "none";
 
 // Filtre par humeur
 document.querySelectorAll(".mood-tag").forEach(tag => {
@@ -41,9 +46,12 @@ function showOnly(section) {
   favoritesTitle.style.display = "none";
   recoContainer.style.display = "none";
   recoTitle.style.display = "none";
+  trendingContainer.style.display = "none";
+  trendingTitle.style.display = "none";
   homeBtn.style.display = "inline-block";
   favoritesPageBtn.style.display = "inline-block";
   recoPageBtn.style.display = "inline-block";
+  trendingBtn.style.display = "inline-block";
 
   if (section === "home") {
     container.style.display = "grid";
@@ -56,6 +64,10 @@ function showOnly(section) {
     recoContainer.style.display = "grid";
     recoTitle.style.display = "block";
     recoPageBtn.style.display = "none";
+  } else if (section === "trending") {
+    trendingContainer.style.display = "grid";
+    trendingTitle.style.display = "block";
+    trendingBtn.style.display = "none";
   }
 }
 
@@ -329,6 +341,40 @@ async function loadGenres() {
     sidebar.appendChild(genreSection);
   } catch (error) {
     console.error("Erreur genres:", error);
+  }
+}
+
+trendingBtn.addEventListener("click", () => {
+  showOnly("trending");
+  loadTrending();
+});
+
+async function loadTrending() {
+  try {
+    trendingContainer.innerHTML = "<p>Chargement...</p>";
+    const response = await fetch(`${API_BASE}/trending`);
+    const movies = await response.json();
+    trendingContainer.innerHTML = "";
+    movies.forEach((movie) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${movie.poster_url || ""}" alt="${movie.title}">
+        <div class="overlay">
+          <h3>${movie.title}</h3>
+          <p>${movie.overview || "Pas de description disponible."}</p>
+        </div>
+        <div class="card-content">
+          <h2>${movie.title}</h2>
+          <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
+          <p class="rating">⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
+        </div>
+      `;
+      trendingContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error(error);
+    trendingContainer.innerHTML = "<p>Erreur lors du chargement des tendances.</p>";
   }
 }
 

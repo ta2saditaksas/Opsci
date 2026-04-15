@@ -253,3 +253,32 @@ def get_trailer(movie_id: int):
                 return {"trailer_url": f"https://www.youtube.com/embed/{video['key']}"}
 
     return {"trailer_url": None}
+
+@app.get("/trending")
+def get_trending():
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
+
+    try:
+        cached = redis_client.get("movies_trending")
+        if cached:
+            return json.loads(cached)
+    except:
+        pass
+
+    url = f"{TMDB_BASE_URL}/trending/movie/day"
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+    params = {"language": "fr-FR"}
+
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=f"Erreur TMDB : {response.text}")
+
+    movies = [format_movie(m) for m in response.json().get("results", [])]
+
+    try:
+        redis_client.setex("movies_trending", 600, json.dumps(movies))
+    except:
+        pass
+
+    return movies
