@@ -346,81 +346,65 @@ body {
   overflow: hidden;
 }
 
-.detail-content {
-  background: #1a1a2e;
-  border-radius: 12px;
-  width: 900px;
-  max-width: 95%;
-  max-height: 90vh;
-  overflow-y: auto;
+.hero {
   position: relative;
-}
-
-.detail-backdrop {
   width: 100%;
-  height: 250px;
+  height: 500px;
   background-size: cover;
   background-position: center;
-  border-radius: 12px 12px 0 0;
-}
-
-.detail-body {
   display: flex;
-  gap: 30px;
-  padding: 25px;
+  align-items: flex-end;
+  padding: 40px;
 }
 
-.detail-poster {
-  width: 180px;
-  border-radius: 8px;
-  flex-shrink: 0;
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.9) 30%, transparent),
+              linear-gradient(to top, rgba(0,0,0,0.8) 20%, transparent);
 }
 
-.detail-right h2 {
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 500px;
+}
+
+.hero-content h2 {
+  font-size: 36px;
+  font-weight: bold;
   margin: 0 0 10px 0;
-  font-size: 24px;
+  color: white;
 }
 
-.detail-meta {
-  color: #9ca3af;
-  font-size: 14px;
+.hero-content p {
+  font-size: 15px;
+  color: #ccc;
+  margin: 0 0 20px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hero-content .rating {
+  font-size: 16px;
   margin-bottom: 15px;
 }
 
-.detail-overview {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #e5e7eb;
-  margin-bottom: 20px;
-}
-
-.cast-list {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.cast-member {
-  text-align: center;
-  width: 80px;
-}
-
-.cast-member img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #374151;
-}
-
-.cast-name {
-  font-size: 12px;
+.hero-btn {
+  background: white;
+  color: black;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
   font-weight: bold;
-  margin: 5px 0 2px 0;
+  margin-right: 10px;
 }
 
-.cast-character {
-  font-size: 11px;
-  color: #9ca3af;
-  margin: 0;
+.hero-btn:hover {
+  background: #ddd;
 }
