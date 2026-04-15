@@ -182,7 +182,10 @@ function renderMovies(movies) {
         alert("Erreur lors du chargement de la bande annonce.");
       }
     });
-
+    
+    card.querySelector("img").addEventListener("click", () => {
+  openMovieDetail(movie.id);
+});
     container.appendChild(card);
   });
 }
@@ -368,8 +371,37 @@ async function loadTrending() {
           <h2>${movie.title}</h2>
           <p class="meta"><strong>Date :</strong> ${movie.release_date || "N/A"}</p>
           <p class="rating">⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
+          <button class="favorite-btn">Ajouter aux favoris</button>
+          <button class="trailer-btn">▶ Bande annonce</button>
         </div>
       `;
+
+      card.querySelector(".favorite-btn").addEventListener("click", async () => {
+        await fetch(`${API_BASE}/favorites`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ movie_id: movie.id, title: movie.title, poster_url: movie.poster_url || "" })
+        });
+        alert("Film ajouté aux favoris !");
+      });
+
+      card.querySelector(".trailer-btn").addEventListener("click", async () => {
+        const res = await fetch(`${API_BASE}/movies/${movie.id}/trailer`);
+        const data = await res.json();
+        if (!data.trailer_url) { alert("Aucune bande annonce disponible."); return; }
+        const modal = document.createElement("div");
+        modal.className = "modal";
+        modal.innerHTML = `
+          <div class="modal-content">
+            <button class="modal-close">✕</button>
+            <iframe width="100%" height="400" src="${data.trailer_url}" frameborder="0" allowfullscreen></iframe>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector(".modal-close").addEventListener("click", () => document.body.removeChild(modal));
+        modal.addEventListener("click", (e) => { if (e.target === modal) document.body.removeChild(modal); });
+      });
+
       trendingContainer.appendChild(card);
     });
   } catch (error) {
@@ -427,6 +459,64 @@ async function loadHero() {
 
   } catch (error) {
     console.error("Erreur hero:", error);
+  }
+}
+
+async function openMovieDetail(movieId) {
+  try {
+    const [detailRes, trailerRes] = await Promise.all([
+      fetch(`${API_BASE}/movies/${movieId}/details`),
+      fetch(`${API_BASE}/movies/${movieId}/trailer`)
+    ]);
+    const movie = await detailRes.json();
+    const trailerData = await trailerRes.json();
+
+    const modal = document.createElement("div");
+    modal.className = "modal";
+    modal.innerHTML = `
+      <div class="detail-content">
+        <button class="modal-close">✕</button>
+        <div class="detail-backdrop" style="background-image: url(${movie.backdrop_url || movie.poster_url})"></div>
+        <div class="detail-body">
+          <div class="detail-left">
+            <img src="${movie.poster_url || ""}" alt="${movie.title}" class="detail-poster">
+          </div>
+          <div class="detail-right">
+            <h2>${movie.title}</h2>
+            <p class="rating">⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
+            <p class="detail-meta">
+              ${movie.release_date || "N/A"} • 
+              ${movie.runtime ? movie.runtime + " min" : "N/A"} • 
+              ${movie.genres?.join(", ") || "N/A"}
+            </p>
+            <p class="detail-overview">${movie.overview || "Pas de description disponible."}</p>
+            <div class="detail-cast">
+              <h3>Casting</h3>
+              <div class="cast-list">
+                ${movie.cast?.map(member => `
+                  <div class="cast-member">
+                    <img src="${member.profile_url || ""}" alt="${member.name}" onerror="this.src=''">
+                    <p class="cast-name">${member.name}</p>
+                    <p class="cast-character">${member.character}</p>
+                  </div>
+                `).join("") || ""}
+              </div>
+            </div>
+            ${trailerData.trailer_url ? `
+              <iframe width="100%" height="250" src="${trailerData.trailer_url}"
+                frameborder="0" allowfullscreen style="border-radius:8px; margin-top:20px;"></iframe>
+            ` : ""}
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector(".modal-close").addEventListener("click", () => document.body.removeChild(modal));
+    modal.addEventListener("click", (e) => { if (e.target === modal) document.body.removeChild(modal); });
+
+  } catch (error) {
+    console.error(error);
   }
 }
 

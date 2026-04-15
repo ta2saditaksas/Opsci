@@ -282,3 +282,41 @@ def get_trending():
         pass
 
     return movies
+
+@app.get("/movies/{movie_id}/details")
+def get_movie_details(movie_id: int):
+    if not TMDB_TOKEN:
+        raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
+
+    headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
+
+    # Infos du film
+    url = f"{TMDB_BASE_URL}/movie/{movie_id}"
+    params = {"language": "fr-FR", "append_to_response": "credits"}
+    response = requests.get(url, headers=headers, params=params, timeout=10)
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Film non trouvé")
+
+    data = response.json()
+
+    # Casting (5 premiers acteurs)
+    cast = []
+    for member in data.get("credits", {}).get("cast", [])[:5]:
+        cast.append({
+            "name": member.get("name"),
+            "character": member.get("character"),
+            "profile_url": f"{TMDB_IMAGE_BASE_URL}{member['profile_path']}" if member.get("profile_path") else None
+        })
+
+    return {
+        "id": data.get("id"),
+        "title": data.get("title"),
+        "overview": data.get("overview"),
+        "release_date": data.get("release_date"),
+        "vote_average": data.get("vote_average"),
+        "runtime": data.get("runtime"),
+        "genres": [g["name"] for g in data.get("genres", [])],
+        "poster_url": f"{TMDB_IMAGE_BASE_URL}{data['poster_path']}" if data.get("poster_path") else None,
+        "backdrop_url": f"https://image.tmdb.org/t/p/original{data['backdrop_path']}" if data.get("backdrop_path") else None,
+        "cast": cast
+    }
