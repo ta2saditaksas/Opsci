@@ -378,10 +378,63 @@ async function loadTrending() {
   }
 }
 
+async function loadHero() {
+  try {
+    const response = await fetch(`${API_BASE}/trending`);
+    const movies = await response.json();
+    if (movies.length === 0) return;
+
+    const movie = movies[0];
+    const hero = document.getElementById("hero");
+
+    hero.style.backgroundImage = `url(${movie.poster_url?.replace("/w500/", "/original/") || movie.poster_url})`;
+
+    hero.innerHTML = `
+      <div class="hero-content">
+        <h2>${movie.title}</h2>
+        <p class="rating"> ${movie.vote_average ? movie.vote_average.toFixed(1) + "/10" : "N/A"}</p>
+        <p>${movie.overview || "Pas de description disponible."}</p>
+        <button class="hero-btn" id="heroTrailerBtn">▶ Bande annonce</button>
+        <button class="hero-btn" id="heroFavBtn">+ Mes favoris</button>
+      </div>
+    `;
+
+    document.getElementById("heroTrailerBtn").addEventListener("click", async () => {
+      const res = await fetch(`${API_BASE}/movies/${movie.id}/trailer`);
+      const data = await res.json();
+      if (!data.trailer_url) { alert("Aucune bande annonce disponible."); return; }
+      const modal = document.createElement("div");
+      modal.className = "modal";
+      modal.innerHTML = `
+        <div class="modal-content">
+          <button class="modal-close">✕</button>
+          <iframe width="100%" height="400" src="${data.trailer_url}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.querySelector(".modal-close").addEventListener("click", () => document.body.removeChild(modal));
+      modal.addEventListener("click", (e) => { if (e.target === modal) document.body.removeChild(modal); });
+    });
+
+    document.getElementById("heroFavBtn").addEventListener("click", async () => {
+      await fetch(`${API_BASE}/favorites`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movie_id: movie.id, title: movie.title, poster_url: movie.poster_url || "" })
+      });
+      alert("Film ajouté aux favoris !");
+    });
+
+  } catch (error) {
+    console.error("Erreur hero:", error);
+  }
+}
+
 async function init() {
   await loadFavorites();
   await loadMovies();
   await loadGenres();
+  await loadHero();
 }
 
 init();
