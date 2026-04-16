@@ -15,6 +15,7 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:postgres@localhost:5432/movies_db"
 )
+engine = create_engine(DATABASE_URL)
 for i in range(10):
     try:
         with engine.connect() as connection:
