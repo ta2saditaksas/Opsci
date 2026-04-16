@@ -16,32 +16,46 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
-    build: ./backend
-    container_name: opsci-backend
-    depends_on:
-      - db
-      - redis
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/movies_db
-      TMDB_TOKEN: ${TMDB_TOKEN}
-    ports:
-      - "8000:8000"
-
-  frontend:
-    build: ./frontend
-    container_name: opsci-frontend
-    depends_on:
-      - backend
-    environment :
-      BACKEND_URL: http://localhost:8000
-    ports:
-      - "8080:8080"
-
   redis:
     image: redis:7
     container_name: opsci-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: opsci-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/movies_db
+      TMDB_TOKEN: ${TMDB_TOKEN}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: opsci-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      BACKEND_URL: http://localhost:8000
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres_data:
