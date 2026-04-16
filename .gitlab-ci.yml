@@ -15,7 +15,18 @@ test_files:
     - test -f frontend/script.js || (echo "frontend/script.js manquant" && exit 1)
     - test -f frontend/style.css || (echo "frontend/style.css manquant" && exit 1)
     - test -f docker-compose.yml || (echo "docker-compose.yml manquant" && exit 1)
-    - echo "Tous les fichiers sont présents "
+    - echo "Tous les fichiers sont présents ✓"
+
+# Stage 1b : tests unitaires backend
+test_backend:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - cd backend
+    - pip install --no-cache-dir -r requirements.txt
+    - pip install pytest httpx
+    - pytest tests/ -v
+  allow_failure: false
 
 # Stage 2 : build des images Docker
 build_backend:
@@ -28,7 +39,7 @@ build_backend:
   script:
     - echo "Build image backend..."
     - docker build -t opsci-backend ./backend
-    - echo "Build backend OK "
+    - echo "Build backend OK ✓"
   only:
     - pipeline
     - main
@@ -43,7 +54,7 @@ build_frontend:
   script:
     - echo "Build image frontend..."
     - docker build -t opsci-frontend ./frontend
-    - echo "Build frontend OK "
+    - echo "Build frontend OK ✓"
   only:
     - pipeline
     - main
