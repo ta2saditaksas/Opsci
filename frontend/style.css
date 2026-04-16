@@ -420,7 +420,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: splashFade 0.8s ease 2s forwards;
+  animation: splashFade 0.8s ease 3s forwards;
 }
 
 @keyframes splashFade {
@@ -434,26 +434,52 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: splashZoom 0.6s ease;
 }
 
-@keyframes splashZoom {
-  from { transform: scale(0.5); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+.splash-letters {
+  display: flex;
+  gap: 5px;
 }
 
-.splash-ta {
-  font-size: 80px;
+.letter {
+  font-size: 90px;
   font-weight: 900;
   color: #e50914;
-  letter-spacing: 5px;
-  line-height: 1;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: letterAppear 0.4s ease forwards;
+  text-shadow: 0 0 30px rgba(229, 9, 20, 0.8);
 }
 
-.splash-screen {
-  font-size: 24px;
+@keyframes letterAppear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.splash-line {
+  width: 0;
+  height: 3px;
+  background: #e50914;
+  margin: 10px 0;
+  animation: lineGrow 0.5s ease 0.6s forwards;
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.8);
+}
+
+@keyframes lineGrow {
+  to { width: 300px; }
+}
+
+.splash-screen-text {
+  font-size: 22px;
   font-weight: 300;
   color: white;
-  letter-spacing: 15px;
-  margin-top: 5px;
+  letter-spacing: 18px;
+  opacity: 0;
+  animation: screenAppear 0.5s ease 1s forwards;
+}
+
+@keyframes screenAppear {
+  to { opacity: 1; }
 }
