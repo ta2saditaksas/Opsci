@@ -4,4 +4,4 @@ metadata:
   name: opsci-config
 data:
   DATABASE_URL: "postgresql://postgres:postgres@postgres-service:5432/movies_db"
-  BACKEND_URL: "http://backend-service:8000"
+  BACKEND_URL: "http://localhost:30000"
