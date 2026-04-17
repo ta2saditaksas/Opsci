@@ -73,12 +73,13 @@ def health():
 
 
 @app.get("/movies")
-def get_movies():
+def get_movies(page: int = 1):
     if not TMDB_TOKEN:
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant dans .env")
 
+    cache_key = f"movies_popular_page_{page}"
     try:
-        cached = redis_client.get("movies_popular")
+        cached = redis_client.get(cache_key)
         if cached:
             return json.loads(cached)
     except:
@@ -86,7 +87,7 @@ def get_movies():
 
     url = f"{TMDB_BASE_URL}/movie/popular"
     headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
-    params = {"language": "fr-FR", "page": 1}
+    params = {"language": "fr-FR", "page": page}
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
     if response.status_code != 200:
@@ -95,7 +96,7 @@ def get_movies():
     movies = [format_movie(m) for m in response.json().get("results", [])]
 
     try:
-        redis_client.setex("movies_popular", 600, json.dumps(movies))
+        redis_client.setex(cache_key, 600, json.dumps(movies))
     except:
         pass
 

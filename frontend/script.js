@@ -16,6 +16,10 @@ const homeBtn = document.getElementById("homeBtn");
 const trendingBtn = document.getElementById("trendingBtn");
 const trendingTitle = document.getElementById("trendingTitle");
 const trendingContainer = document.getElementById("trending");
+let currentPage = 1;
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const pageInfo = document.getElementById("pageInfo");
 let favoriteIds = [];
 
 // Cacher au démarrage
@@ -40,6 +44,22 @@ document.querySelectorAll(".mood-tag").forEach(tag => {
   });
 });
 
+prevBtn.addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    pageInfo.textContent = `Page ${currentPage}`;
+    loadMovies(`${API_BASE}/movies?page=${currentPage}`);
+    window.scrollTo(0, 0);
+  }
+});
+
+nextBtn.addEventListener("click", () => {
+  currentPage++;
+  pageInfo.textContent = `Page ${currentPage}`;
+  loadMovies(`${API_BASE}/movies?page=${currentPage}`);
+  window.scrollTo(0, 0);
+});
+
 function showOnly(section) {
   container.style.display = "none";
   favoritesContainer.style.display = "none";
@@ -52,22 +72,31 @@ function showOnly(section) {
   favoritesPageBtn.style.display = "inline-block";
   recoPageBtn.style.display = "inline-block";
   trendingBtn.style.display = "inline-block";
+  const pagination = document.getElementById("pagination");
+  pagination.style.display = "none";
 
   if (section === "home") {
     container.style.display = "grid";
     homeBtn.style.display = "none";
+    pagination.style.display = "flex";
   } else if (section === "favorites") {
     favoritesContainer.style.display = "grid";
     favoritesTitle.style.display = "block";
     favoritesPageBtn.style.display = "none";
+    currentPage = 1;
+    pageInfo.textContent = "Page 1";
   } else if (section === "reco") {
     recoContainer.style.display = "grid";
     recoTitle.style.display = "block";
     recoPageBtn.style.display = "none";
+    currentPage = 1;
+    pageInfo.textContent = "Page 1";
   } else if (section === "trending") {
     trendingContainer.style.display = "grid";
     trendingTitle.style.display = "block";
     trendingBtn.style.display = "none";
+    currentPage = 1;
+    pageInfo.textContent = "Page 1";
   }
 }
 

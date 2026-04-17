@@ -8,16 +8,16 @@
 </head>
 <body>
   <div id="splash">
-  <div class="splash-logo">
-    <div class="splash-letters">
-      <span class="letter" style="animation-delay: 0s">T</span>
-      <span class="letter" style="animation-delay: 0.15s">&</span>
-      <span class="letter" style="animation-delay: 0.3s">A</span>
+    <div class="splash-logo">
+      <div class="splash-letters">
+        <span class="letter" style="animation-delay: 0s">T</span>
+        <span class="letter" style="animation-delay: 0.15s">&</span>
+        <span class="letter" style="animation-delay: 0.3s">A</span>
+      </div>
+      <div class="splash-line"></div>
+      <div class="splash-screen-text">SCREEN</div>
     </div>
-    <div class="splash-line"></div>
-    <div class="splash-screen-text">SCREEN</div>
   </div>
-</div>
 
   <header class="header">
     <h1>T&A Screen</h1>
@@ -28,11 +28,11 @@
       <button id="resetButton">Réinitialiser</button>
       <button id="favoritesPageBtn">Mes favoris</button>
       <button id="recoPageBtn">Recommandés pour vous</button>
-      <button id="trendingBtn"> Tendances</button>
+      <button id="trendingBtn">Tendances</button>
       <button id="homeBtn">Accueil</button>
     </div>
   </header>
-  
+
   <div id="hero" class="hero"></div>
 
   <div class="layout">
@@ -54,11 +54,17 @@
       <h2 id="recoTitle">Recommandés pour vous</h2>
       <div id="recommendations" class="grid"></div>
 
-      <h2 id="trendingTitle"> Tendances du jour</h2>
+      <h2 id="trendingTitle">Tendances du jour</h2>
       <div id="trending" class="grid"></div>
 
       <div id="movies" class="grid"></div>
     </main>
+  </div>
+
+  <div id="pagination" class="pagination">
+    <button id="prevBtn">◀ Précédent</button>
+    <span id="pageInfo">Page 1</span>
+    <button id="nextBtn">Suivant ▶</button>
   </div>
 
   <script src="config.js"></script>
