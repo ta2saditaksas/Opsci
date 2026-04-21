@@ -27,6 +27,15 @@ for i in range(10):
                     poster_url TEXT
                 )
             """))
+            connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS history (
+                    id SERIAL PRIMARY KEY,
+                    movie_id INTEGER NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    poster_url TEXT,
+                    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
             connection.commit()
         break
     except Exception:
@@ -322,3 +331,32 @@ def get_movie_details(movie_id: int):
         "backdrop_url": f"https://image.tmdb.org/t/p/original{data['backdrop_path']}" if data.get("backdrop_path") else None,
         "cast": cast
     }
+
+class HistoryMovie(BaseModel):
+    movie_id: int
+    title: str
+    poster_url: str | None = None
+
+@app.post("/history")
+def add_history(movie: HistoryMovie):
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("INSERT INTO history (movie_id, title, poster_url) VALUES (:movie_id, :title, :poster_url)"),
+                {"movie_id": movie.movie_id, "title": movie.title, "poster_url": movie.poster_url}
+            )
+            connection.commit()
+        return {"message": "Film ajouté à l'historique"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/history")
+def get_history():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("SELECT DISTINCT ON (movie_id) id, movie_id, title, poster_url, viewed_at FROM history ORDER BY movie_id, viewed_at DESC")
+            )
+            return [{"id": row.id, "movie_id": row.movie_id, "title": row.title, "poster_url": row.poster_url, "viewed_at": str(row.viewed_at)} for row in result]
+    except Exception as e:
+        return {"error": str(e)}

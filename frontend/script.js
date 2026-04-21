@@ -20,7 +20,11 @@ let currentPage = 1;
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
+const historyBtn = document.getElementById("historyBtn");
+const historyTitle = document.getElementById("historyTitle");
+const historyContainer = document.getElementById("history");
 let favoriteIds = [];
+
 
 // Cacher au démarrage
 favoritesContainer.style.display = "none";
@@ -32,6 +36,8 @@ favoritesPageBtn.style.display = "inline-block";
 recoPageBtn.style.display = "inline-block";
 trendingContainer.style.display = "none";
 trendingTitle.style.display = "none";
+historyContainer.style.display = "none";
+historyTitle.style.display = "none";
 
 // Filtre par humeur
 document.querySelectorAll(".mood-tag").forEach(tag => {
@@ -74,6 +80,9 @@ function showOnly(section) {
   trendingBtn.style.display = "inline-block";
   const pagination = document.getElementById("pagination");
   pagination.style.display = "none";
+  historyContainer.style.display = "none";
+  historyTitle.style.display = "none";
+  historyBtn.style.display = "inline-block";
 
   if (section === "home") {
     container.style.display = "grid";
@@ -97,6 +106,10 @@ function showOnly(section) {
     trendingBtn.style.display = "none";
     currentPage = 1;
     pageInfo.textContent = "Page 1";
+  } else if (section === "history") {
+    historyContainer.style.display = "grid";
+    historyTitle.style.display = "block";
+    historyBtn.style.display = "none";
   }
 }
 
@@ -114,6 +127,10 @@ homeBtn.addEventListener("click", () => {
   showOnly("home");
   loadMovies();
 });
+historyBtn.addEventListener("click", () => {
+  showOnly("history");
+  loadHistory();
+});
 
 async function loadMovies(url = MOVIES_URL) {
   try {
@@ -127,6 +144,35 @@ async function loadMovies(url = MOVIES_URL) {
   }
 }
 
+async function loadHistory() {
+  try {
+    historyContainer.innerHTML = "<p>Chargement...</p>";
+    const response = await fetch(`${API_BASE}/history`);
+    const movies = await response.json();
+    historyContainer.innerHTML = "";
+
+    if (movies.length === 0) {
+      historyContainer.innerHTML = "<p style='text-align:center;'>Aucun film visionné</p>";
+      return;
+    }
+
+    movies.forEach((movie) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${movie.poster_url || ""}" alt="${movie.title}">
+        <div class="card-content">
+          <h2>${movie.title}</h2>
+          <p class="meta">Vu le : ${new Date(movie.viewed_at).toLocaleDateString("fr-FR")}</p>
+        </div>
+      `;
+      historyContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error(error);
+    historyContainer.innerHTML = "<p>Erreur chargement historique.</p>";
+  }
+}
 function renderMovies(movies) {
   container.innerHTML = "";
   if (movies.length === 0) {
@@ -186,6 +232,15 @@ function renderMovies(movies) {
           alert("Aucune bande annonce disponible.");
           return;
         }
+        await fetch(`${API_BASE}/history`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            movie_id: movie.id,
+            title: movie.title,
+            poster_url: movie.poster_url || ""
+          })
+        });
 
         const modal = document.createElement("div");
         modal.className = "modal";
