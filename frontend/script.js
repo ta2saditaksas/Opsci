@@ -20,7 +20,104 @@ let currentPage = 1;
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const pageInfo = document.getElementById("pageInfo");
+const historyBtn = document.getElementById("historyBtn");
+const historyTitle = document.getElementById("historyTitle");
+const historyContainer = document.getElementById("history");
 let favoriteIds = [];
+let currentProfile = null;
+let selectedAvatar = "🎬";
+
+const AVATAR_COLORS = {
+  "rouge": "#e50914",
+  "bleu": "#2563eb",
+  "vert": "#16a34a",
+  "violet": "#7c3aed",
+  "orange": "#ea580c"
+};
+
+async function initProfiles() {
+  const profileScreen = document.getElementById("profile-screen");
+  await loadProfiles();
+  profileScreen.style.display = "flex";
+}
+
+async function loadProfiles() {
+  try {
+    const response = await fetch(`${API_BASE}/profiles`);
+    const profiles = await response.json();
+    const profileList = document.getElementById("profile-list");
+    profileList.innerHTML = "";
+
+    profiles.forEach(profile => {
+      const div = document.createElement("div");
+      div.className = "profile-card";
+      div.innerHTML = `
+        <div class="profile-avatar" style="background:${AVATAR_COLORS[profile.avatar] || '#374151'}">
+          ${profile.name.charAt(0).toUpperCase()}
+        </div>
+        <p class="profile-name">${profile.name}</p>
+        <button class="delete-profile-btn" data-id="${profile.id}">❌</button>
+      `;
+      div.querySelector(".profile-avatar").addEventListener("click", () => selectProfile(profile));
+      div.querySelector(".profile-name").addEventListener("click", () => selectProfile(profile));
+      div.querySelector(".delete-profile-btn").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (confirm(`Supprimer le profil "${profile.name}" ?`)) {
+          await fetch(`${API_BASE}/profiles/${profile.id}`, { method: "DELETE" });
+          await loadProfiles();
+        }
+      });
+      profileList.appendChild(div);
+    });
+  } catch (error) {
+    console.error("Erreur profils:", error);
+  }
+}
+
+function selectProfile(profile) {
+  currentProfile = profile;
+  document.getElementById("profile-screen").style.display = "none";
+
+  let indicator = document.getElementById("profile-indicator");
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.id = "profile-indicator";
+    document.body.appendChild(indicator);
+  }
+  const color = AVATAR_COLORS[profile.avatar] || '#374151';
+  indicator.innerHTML = `<span style="background:${color}; padding:2px 8px; border-radius:4px; margin-right:6px;">${profile.name.charAt(0).toUpperCase()}</span>${profile.name}`;
+  indicator.onclick = () => {
+    document.getElementById("profile-screen").style.display = "flex";
+  };
+}
+
+document.getElementById("addProfileBtn").addEventListener("click", () => {
+  const form = document.getElementById("add-profile-form");
+  form.style.display = form.style.display === "none" ? "flex" : "none";
+});
+
+document.querySelectorAll(".avatar-option").forEach(opt => {
+  opt.addEventListener("click", () => {
+    document.querySelectorAll(".avatar-option").forEach(o => o.classList.remove("selected"));
+    opt.classList.add("selected");
+    selectedAvatar = opt.dataset.avatar;
+  });
+});
+
+document.getElementById("createProfileBtn").addEventListener("click", async () => {
+  const name = document.getElementById("profileNameInput").value.trim();
+  if (!name) { alert("Entre un nom !"); return; }
+
+  await fetch(`${API_BASE}/profiles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, avatar: selectedAvatar })
+  });
+
+  document.getElementById("profileNameInput").value = "";
+  document.getElementById("add-profile-form").style.display = "none";
+  await loadProfiles();
+});
 
 // Cacher au démarrage
 favoritesContainer.style.display = "none";
@@ -32,6 +129,8 @@ favoritesPageBtn.style.display = "inline-block";
 recoPageBtn.style.display = "inline-block";
 trendingContainer.style.display = "none";
 trendingTitle.style.display = "none";
+historyContainer.style.display = "none";
+historyTitle.style.display = "none";
 
 // Filtre par humeur
 document.querySelectorAll(".mood-tag").forEach(tag => {
@@ -74,6 +173,9 @@ function showOnly(section) {
   trendingBtn.style.display = "inline-block";
   const pagination = document.getElementById("pagination");
   pagination.style.display = "none";
+  historyContainer.style.display = "none";
+  historyTitle.style.display = "none";
+  historyBtn.style.display = "inline-block";
 
   if (section === "home") {
     container.style.display = "grid";
@@ -97,6 +199,10 @@ function showOnly(section) {
     trendingBtn.style.display = "none";
     currentPage = 1;
     pageInfo.textContent = "Page 1";
+  } else if (section === "history") {
+    historyContainer.style.display = "grid";
+    historyTitle.style.display = "block";
+    historyBtn.style.display = "none";
   }
 }
 
@@ -114,6 +220,10 @@ homeBtn.addEventListener("click", () => {
   showOnly("home");
   loadMovies();
 });
+historyBtn.addEventListener("click", () => {
+  showOnly("history");
+  loadHistory();
+});
 
 async function loadMovies(url = MOVIES_URL) {
   try {
@@ -127,6 +237,35 @@ async function loadMovies(url = MOVIES_URL) {
   }
 }
 
+async function loadHistory() {
+  try {
+    historyContainer.innerHTML = "<p>Chargement...</p>";
+    const response = await fetch(`${API_BASE}/history`);
+    const movies = await response.json();
+    historyContainer.innerHTML = "";
+
+    if (movies.length === 0) {
+      historyContainer.innerHTML = "<p style='text-align:center;'>Aucun film visionné</p>";
+      return;
+    }
+
+    movies.forEach((movie) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${movie.poster_url || ""}" alt="${movie.title}">
+        <div class="card-content">
+          <h2>${movie.title}</h2>
+          <p class="meta">Vu le : ${new Date(movie.viewed_at).toLocaleDateString("fr-FR")}</p>
+        </div>
+      `;
+      historyContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error(error);
+    historyContainer.innerHTML = "<p>Erreur chargement historique.</p>";
+  }
+}
 function renderMovies(movies) {
   container.innerHTML = "";
   if (movies.length === 0) {
@@ -156,25 +295,29 @@ function renderMovies(movies) {
 
     const favoriteButton = card.querySelector(".favorite-btn");
     favoriteButton.addEventListener("click", async () => {
-      try {
-        const response = await fetch(`${API_BASE}/favorites`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            movie_id: movie.id,
-            title: movie.title,
-            poster_url: movie.poster_url || ""
-          })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Erreur ajout favoris");
-        alert("Film ajouté aux favoris !");
-        loadFavorites();
-      } catch (error) {
-        console.error(error);
-        alert("Impossible d'ajouter le film aux favoris.");
-      }
+    try {
+    const url = currentProfile
+      ? `${API_BASE}/profiles/${currentProfile.id}/favorites`
+      : `${API_BASE}/favorites`;
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        movie_id: movie.id,
+        title: movie.title,
+        poster_url: movie.poster_url || ""
+      })
     });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Erreur ajout favoris");
+    alert("Film ajouté aux favoris !");
+    loadFavorites();
+  } catch (error) {
+    console.error(error);
+    alert("Impossible d'ajouter le film aux favoris.");
+  }
+});
 
     const trailerButton = card.querySelector(".trailer-btn");
     trailerButton.addEventListener("click", async () => {
@@ -186,6 +329,15 @@ function renderMovies(movies) {
           alert("Aucune bande annonce disponible.");
           return;
         }
+        await fetch(`${API_BASE}/history`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            movie_id: movie.id,
+            title: movie.title,
+            poster_url: movie.poster_url || ""
+          })
+        });
 
         const modal = document.createElement("div");
         modal.className = "modal";
@@ -256,7 +408,11 @@ searchInput.addEventListener("input", () => {
 
 async function loadFavorites() {
   try {
-    const response = await fetch(`${API_BASE}/favorites`);
+    const url = currentProfile 
+      ? `${API_BASE}/profiles/${currentProfile.id}/favorites`
+      : `${API_BASE}/favorites`;
+    
+    const response = await fetch(url);
     const favorites = await response.json();
     favoriteIds = favorites.map(movie => movie.movie_id);
     favoritesContainer.innerHTML = "";
@@ -279,9 +435,10 @@ async function loadFavorites() {
       const deleteButton = card.querySelector(".delete-btn");
       deleteButton.addEventListener("click", async () => {
         try {
-          const response = await fetch(`${API_BASE}/favorites/${movie.movie_id}`, {
-            method: "DELETE"
-          });
+          const deleteUrl = currentProfile
+            ? `${API_BASE}/profiles/${currentProfile.id}/favorites/${movie.movie_id}`
+            : `${API_BASE}/favorites/${movie.movie_id}`;
+          const response = await fetch(deleteUrl, { method: "DELETE" });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "Erreur suppression");
           alert("Film supprimé");
@@ -590,6 +747,7 @@ async function init() {
   await loadMovies();
   await loadGenres();
   await loadHero();
+  await initProfiles();
 }
 
 init();

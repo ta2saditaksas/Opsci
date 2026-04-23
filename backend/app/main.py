@@ -27,6 +27,32 @@ for i in range(10):
                     poster_url TEXT
                 )
             """))
+            connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS history (
+                    id SERIAL PRIMARY KEY,
+                    movie_id INTEGER NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    poster_url TEXT,
+                    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS profiles (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(255) UNIQUE NOT NULL,
+                    avatar VARCHAR(10) DEFAULT '🎬'
+                )
+            """))
+            connection.execute(text("""
+                CREATE TABLE IF NOT EXISTS profile_favorites (
+                    id SERIAL PRIMARY KEY,
+                    profile_id INTEGER NOT NULL,
+                    movie_id INTEGER NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    poster_url TEXT,
+                    UNIQUE(profile_id, movie_id)
+                )
+            """))
             connection.commit()
         break
     except Exception:
@@ -37,7 +63,7 @@ load_dotenv()
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # autorise tout (dev)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,6 +74,21 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 
 class FavoriteMovie(BaseModel):
+    movie_id: int
+    title: str
+    poster_url: str | None = None
+
+class HistoryMovie(BaseModel):
+    movie_id: int
+    title: str
+    poster_url: str | None = None
+
+class Profile(BaseModel):
+    name: str
+    avatar: str = "🎬"
+
+class ProfileFavorite(BaseModel):
+    profile_id: int
     movie_id: int
     title: str
     poster_url: str | None = None
@@ -66,11 +107,9 @@ def format_movie(movie):
 def root():
     return {"message": "Backend OK"}
 
-
 @app.get("/health")
 def health():
     return {"status": "healthy"}
-
 
 @app.get("/movies")
 def get_movies(page: int = 1):
@@ -117,7 +156,6 @@ def search_movies(q: str):
 
     return [format_movie(m) for m in response.json().get("results", [])]
 
-
 @app.get("/test-db")
 def test_db():
     try:
@@ -126,7 +164,7 @@ def test_db():
             return {"message": "Connexion PostgreSQL OK"}
     except Exception as e:
         return {"error": str(e)}
-    
+
 @app.get("/favorites")
 def get_favorites():
     try:
@@ -137,7 +175,7 @@ def get_favorites():
             return [{"id": row.id, "movie_id": row.movie_id, "title": row.title, "poster_url": row.poster_url} for row in result]
     except Exception as e:
         return {"error": str(e)}
-    
+
 @app.post("/favorites")
 def add_favorite(movie: FavoriteMovie):
     try:
@@ -146,10 +184,8 @@ def add_favorite(movie: FavoriteMovie):
                 text("SELECT id FROM favorites WHERE movie_id = :movie_id"),
                 {"movie_id": movie.movie_id}
             ).fetchone()
-
             if existing:
                 return {"message": "Film déjà présent dans les favoris"}
-
             connection.execute(
                 text("INSERT INTO favorites (movie_id, title, poster_url) VALUES (:movie_id, :title, :poster_url)"),
                 {"movie_id": movie.movie_id, "title": movie.title, "poster_url": movie.poster_url}
@@ -187,13 +223,12 @@ def get_recommendations(movie_id: int):
 
     return [format_movie(m) for m in response.json().get("results", [])[:5]]
 
-
 MOOD_GENRES = {
-    "bonne_humeur": [35, 16],      # Comédie, Animation
-    "melancolique": [18, 10749],   # Drame, Romance
-    "sensations": [27, 53],        # Horreur, Thriller
-    "aventure": [28, 878],         # Action, Science-Fiction
-    "reflechi": [99, 36]           # Documentaire, Histoire
+    "bonne_humeur": [35, 16],
+    "melancolique": [18, 10749],
+    "sensations": [27, 53],
+    "aventure": [28, 878],
+    "reflechi": [99, 36]
 }
 
 @app.get("/movies/mood/{mood}")
@@ -226,7 +261,6 @@ def get_genres():
     response = requests.get(url, headers=headers, params=params, timeout=10)
     return response.json().get("genres", [])
 
-
 @app.get("/movies/genre/{genre_id}")
 def get_movies_by_genre(genre_id: int):
     if not TMDB_TOKEN:
@@ -238,7 +272,6 @@ def get_movies_by_genre(genre_id: int):
 
     response = requests.get(url, headers=headers, params=params, timeout=10)
     return [format_movie(m) for m in response.json().get("results", [])]
-
 
 @app.get("/movies/{movie_id}/trailer")
 def get_trailer(movie_id: int):
@@ -291,8 +324,6 @@ def get_movie_details(movie_id: int):
         raise HTTPException(status_code=500, detail="TMDB_TOKEN manquant")
 
     headers = {"Authorization": f"Bearer {TMDB_TOKEN}", "accept": "application/json"}
-
-    # Infos du film
     url = f"{TMDB_BASE_URL}/movie/{movie_id}"
     params = {"language": "fr-FR", "append_to_response": "credits"}
     response = requests.get(url, headers=headers, params=params, timeout=10)
@@ -300,8 +331,6 @@ def get_movie_details(movie_id: int):
         raise HTTPException(status_code=response.status_code, detail="Film non trouvé")
 
     data = response.json()
-
-    # Casting (5 premiers acteurs)
     cast = []
     for member in data.get("credits", {}).get("cast", [])[:5]:
         cast.append({
@@ -322,3 +351,117 @@ def get_movie_details(movie_id: int):
         "backdrop_url": f"https://image.tmdb.org/t/p/original{data['backdrop_path']}" if data.get("backdrop_path") else None,
         "cast": cast
     }
+
+@app.post("/history")
+def add_history(movie: HistoryMovie):
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("INSERT INTO history (movie_id, title, poster_url) VALUES (:movie_id, :title, :poster_url)"),
+                {"movie_id": movie.movie_id, "title": movie.title, "poster_url": movie.poster_url}
+            )
+            connection.commit()
+        return {"message": "Film ajouté à l'historique"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/history")
+def get_history():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("SELECT DISTINCT ON (movie_id) id, movie_id, title, poster_url, viewed_at FROM history ORDER BY movie_id, viewed_at DESC")
+            )
+            return [{"id": row.id, "movie_id": row.movie_id, "title": row.title, "poster_url": row.poster_url, "viewed_at": str(row.viewed_at)} for row in result]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/profiles")
+def get_profiles():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT id, name, avatar FROM profiles ORDER BY id"))
+            return [{"id": row.id, "name": row.name, "avatar": row.avatar} for row in result]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/profiles")
+def create_profile(profile: Profile):
+    try:
+        with engine.connect() as connection:
+            existing = connection.execute(
+                text("SELECT id FROM profiles WHERE name = :name"),
+                {"name": profile.name}
+            ).fetchone()
+            if existing:
+                return {"message": "Profil déjà existant"}
+            result = connection.execute(
+                text("INSERT INTO profiles (name, avatar) VALUES (:name, :avatar) RETURNING id"),
+                {"name": profile.name, "avatar": profile.avatar}
+            )
+            profile_id = result.fetchone().id
+            connection.commit()
+        return {"message": "Profil créé", "id": profile_id}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.delete("/profiles/{profile_id}")
+def delete_profile(profile_id: int):
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("DELETE FROM profile_favorites WHERE profile_id = :profile_id"),
+                {"profile_id": profile_id}
+            )
+            connection.execute(
+                text("DELETE FROM profiles WHERE id = :profile_id"),
+                {"profile_id": profile_id}
+            )
+            connection.commit()
+        return {"message": "Profil supprimé"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/profiles/{profile_id}/favorites")
+def get_profile_favorites(profile_id: int):
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("SELECT id, movie_id, title, poster_url FROM profile_favorites WHERE profile_id = :profile_id ORDER BY id DESC"),
+                {"profile_id": profile_id}
+            )
+            return [{"id": row.id, "movie_id": row.movie_id, "title": row.title, "poster_url": row.poster_url} for row in result]
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/profiles/{profile_id}/favorites")
+def add_profile_favorite(profile_id: int, movie: FavoriteMovie):
+    try:
+        with engine.connect() as connection:
+            existing = connection.execute(
+                text("SELECT id FROM profile_favorites WHERE profile_id = :profile_id AND movie_id = :movie_id"),
+                {"profile_id": profile_id, "movie_id": movie.movie_id}
+            ).fetchone()
+            if existing:
+                return {"message": "Film déjà en favori"}
+            connection.execute(
+                text("INSERT INTO profile_favorites (profile_id, movie_id, title, poster_url) VALUES (:profile_id, :movie_id, :title, :poster_url)"),
+                {"profile_id": profile_id, "movie_id": movie.movie_id, "title": movie.title, "poster_url": movie.poster_url}
+            )
+            connection.commit()
+        return {"message": "Film ajouté aux favoris"}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.delete("/profiles/{profile_id}/favorites/{movie_id}")
+def delete_profile_favorite(profile_id: int, movie_id: int):
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("DELETE FROM profile_favorites WHERE profile_id = :profile_id AND movie_id = :movie_id"),
+                {"profile_id": profile_id, "movie_id": movie_id}
+            )
+            connection.commit()
+        return {"message": "Film supprimé des favoris"}
+    except Exception as e:
+        return {"error": str(e)}

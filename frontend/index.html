@@ -19,18 +19,40 @@
     </div>
   </div>
 
+  <div id="profile-screen">
+  <div class="profile-container">
+    <h2>Qui regarde ?</h2>
+    <div id="profile-list" class="profile-list"></div>
+    <button id="addProfileBtn" class="add-profile-btn">+ Ajouter un profil</button>
+    <div id="add-profile-form" class="add-profile-form" style="display:none;">
+  <input type="text" id="profileNameInput" placeholder="Nom du profil..." />
+  <div class="avatar-select">
+    <span class="avatar-option" data-avatar="rouge" style="background:#e50914;">A</span>
+    <span class="avatar-option" data-avatar="bleu" style="background:#2563eb;">B</span>
+    <span class="avatar-option" data-avatar="vert" style="background:#16a34a;">C</span>
+    <span class="avatar-option" data-avatar="violet" style="background:#7c3aed;">D</span>
+    <span class="avatar-option" data-avatar="orange" style="background:#ea580c;">E</span>
+  </div>
+  <button id="createProfileBtn">Créer</button>
+</div>
+  </div>
+</div>
+
   <header class="header">
     <h1>T&A Screen</h1>
-    <p>Votre catalogue de films intelligent</p>
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Rechercher un film..." />
-      <button id="searchButton">Rechercher</button>
-      <button id="resetButton">Réinitialiser</button>
-      <button id="favoritesPageBtn">Mes favoris</button>
-      <button id="recoPageBtn">Recommandés pour vous</button>
-      <button id="trendingBtn">Tendances</button>
-      <button id="homeBtn">Accueil</button>
-    </div>
+  <p>Votre catalogue de films intelligent</p>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Rechercher un film..." />
+    <button id="searchButton">Rechercher</button>
+    <button id="resetButton">Réinitialiser</button>
+  </div>
+  <div class="nav-bar">
+    <button id="favoritesPageBtn"> Mes favoris</button>
+    <button id="recoPageBtn"> Recommandés</button>
+    <button id="trendingBtn"> Tendances</button>
+    <button id="historyBtn"> Historique</button>
+    <button id="homeBtn"> Accueil</button>
+  </div>
   </header>
 
   <div id="hero" class="hero"></div>
@@ -56,6 +78,9 @@
 
       <h2 id="trendingTitle">Tendances du jour</h2>
       <div id="trending" class="grid"></div>
+
+      <h2 id="historyTitle">Historique</h2>
+      <div id="history" class="grid"></div>
 
       <div id="movies" class="grid"></div>
     </main>
