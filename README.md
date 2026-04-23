@@ -17,18 +17,27 @@ Projet de conception et déploiement d'une application web orientée données et
 - **Frontend** : HTML, CSS, JavaScript (sans framework)
 - **Backend** : FastAPI (Python)
 - **Base de données** : PostgreSQL
+- **Source de données** : API TMDB
 - **Conteneurisation** : Docker
 - **Orchestration** : Kubernetes (Minikube)
 - **CI/CD** : GitLab CI/CD
 
 ## Structure du projet
-- `frontend/` : Interface utilisateur (HTML + CSS + JS)
-- `backend/` : API Backend avec FastAPI
-- `database/` : Scripts SQL pour PostgreSQL
-- `k8s/` : Manifests Kubernetes pour déploiement
-- `docs/` : Documentation et schémas
-- `README.md` : Fichier de documentation
-- `.gitlab-ci.yml` : Pipeline CI/CD pour automatisation
+opsci/
+├── backend/app/main.py      # API FastAPI
+├── backend/tests/           # Tests unitaires pytest
+├── backend/Dockerfile
+├── backend/requirements.txt
+├── frontend/index.html
+├── frontend/script.js
+├── frontend/style.css
+├── frontend/favicon.svg
+├── k8s/                     # Manifests Kubernetes
+├── docker-compose.yml
+├── .gitlab-ci.yml
+├── run.sh                   # Script de lancement
+└── README.md
+
 
 ## Fonctionnalités
 ### Minimales
@@ -38,33 +47,44 @@ Projet de conception et déploiement d'une application web orientée données et
 - Gestion minimale des erreurs
 
 ### Avancées
-- Films favoris (ajout / suppression)
-- Stockage des favoris en PostgreSQL
+- Favoris par profil utilisateur (PostgreSQL)
+- Recommandations basées sur les favoris
+- Historique de visionnage
+- Films tendances du jour
+- Filtres par humeur et par genre
+- Bande annonce YouTube (modal)
+- Pagination du catalogue
+- Cache Redis (performances)
+- Profils utilisateurs avec avatars colorés
+- Splash screen 
 
-## Lancer avec Docker Compose
+## Lancement rapide
 
 ### Prérequis
-- Docker Desktop installé
-- Un token TMDB ([obtenir ici](https://www.themoviedb.org/settings/api))
+- Docker + Docker Compose installés
+- Token TMDB gratuit : https://www.themoviedb.org/settings/api
 
 ### Démarrage
 ```bash
 git clone https://gitlab.com/opsci_2026/opsci
 cd opsci
 echo "TMDB_TOKEN=ton_token_ici" > .env
-docker compose up --build
+./run.sh
 ```
-- Frontend : http://localhost:8080
-- Backend : http://localhost:8000
 
-## Lancer avec Kubernetes (Minikube)
+- **Frontend** : http://localhost:8080
+- **Backend API** : http://localhost:8000
 
-### Prérequis
-- Minikube + kubectl + Docker installés
-
-### Démarrage
+### Arrêt
 ```bash
-minikube start
+docker compose down        # Garde les données
+docker compose down -v     # Supprime les données
+```
+
+## Déploiement Kubernetes (Minikube)
+
+```bash
+minikube start --cpus=1 --force
 eval $(minikube docker-env)
 docker build -t opsci-backend ./backend
 docker build -t opsci-frontend ./frontend
@@ -73,14 +93,16 @@ kubectl apply -f k8s/secret.yaml
 kubectl apply -f k8s/postgres-deployment.yaml
 kubectl apply -f k8s/backend-deployment.yaml
 kubectl apply -f k8s/frontend-deployment.yaml
-minikube service frontend-service --url
+kubectl apply -f k8s/ingress.yaml
+kubectl port-forward service/frontend-service 8080:8080
 ```
 
 ## Pipeline CI/CD
 Le pipeline se déclenche automatiquement à chaque push :
-1. **test** — vérification des fichiers
-2. **build** — construction des images Docker
-3. **deploy** — déploiement (branche main)
+1. **test_files** — vérification de la présence des fichiers
+2. **test_backend** — tests unitaires pytest
+3. **build** — construction des images Docker
+4. **deploy** — déploiement simulé (branche main uniquement)
 
 ## Architecture
 ```
